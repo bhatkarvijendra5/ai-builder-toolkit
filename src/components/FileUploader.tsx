@@ -73,33 +73,6 @@ const FileUploader = ({
         </div>
       </Card>
 
-      {selectedFiles.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="font-semibold">Selected Files:</h3>
-          {selectedFiles.map((file, index) => (
-            <Card key={index} className="flex items-center justify-between p-4">
-              <div className="flex items-center space-x-3">
-                <div className="rounded-lg bg-primary/10 p-2">
-                  <File className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="font-medium">{file.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {(file.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => removeFile(index)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </Card>
-          ))}
-        </div>
-      )}
     </div>
   );
 };

@@ -55,18 +55,33 @@ const MergePDF = () => {
       toast.info("Scanning PDFs before merging...");
     }
 
-    // Simulate processing
+    // Simulate processing with progress
     const interval = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 100) {
+        if (prev >= 95) {
           clearInterval(interval);
-          return 100;
+          return 95;
         }
         return prev + 10;
       });
     }, 300);
 
     setTimeout(() => {
+      setProgress(100);
+      clearInterval(interval);
+      
+      // Create a simple merged PDF download
+      // TODO: Replace with actual PDF merging logic using pdf-lib
+      const blob = new Blob([], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `merged-pdf-${Date.now()}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
       setIsProcessing(false);
       toast.success(`${files.length} PDFs merged successfully!`);
     }, 3000);

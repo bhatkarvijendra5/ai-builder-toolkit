@@ -16,10 +16,8 @@ const Hero = () => {
             <span>All tools are 100% free</span>
           </div>
           
-          <h1 className="mb-6 text-3xl font-bold tracking-tight md:text-5xl lg:text-6xl">
-            <span className="gradient-primary bg-clip-text text-transparent">
-              Work Faster. Convert Smarter. Create Better.
-            </span>
+          <h1 className="mb-6 text-3xl font-bold tracking-tight text-foreground md:text-5xl lg:text-6xl">
+            Work Faster. Convert Smarter. Create Better.
           </h1>
           
           <p className="mb-12 text-base text-muted-foreground md:text-lg">
