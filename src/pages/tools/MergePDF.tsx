@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { PDFDocument } from "pdf-lib";
 
 const MergePDF = () => {
   const [files, setFiles] = useState<File[]>([]);
@@ -55,24 +56,33 @@ const MergePDF = () => {
       toast.info("Scanning PDFs before merging...");
     }
 
-    // Simulate processing with progress
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 95) {
-          clearInterval(interval);
-          return 95;
-        }
-        return prev + 10;
-      });
-    }, 300);
-
-    setTimeout(() => {
-      setProgress(100);
-      clearInterval(interval);
+    try {
+      // Create a new PDF document
+      const mergedPdf = await PDFDocument.create();
       
-      // Create a simple merged PDF download
-      // TODO: Replace with actual PDF merging logic using pdf-lib
-      const blob = new Blob([], { type: "application/pdf" });
+      // Process each file
+      for (let i = 0; i < files.length; i++) {
+        setProgress(Math.round((i / files.length) * 90));
+        
+        const file = files[i];
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await PDFDocument.load(arrayBuffer);
+        
+        // Copy all pages from this PDF
+        const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+        copiedPages.forEach((page) => mergedPdf.addPage(page));
+      }
+      
+      setProgress(95);
+      
+      // Save the merged PDF
+      const mergedPdfBytes = await mergedPdf.save();
+      
+      setProgress(100);
+      
+      // Create download
+      const pdfBytes = new Uint8Array(mergedPdfBytes);
+      const blob = new Blob([pdfBytes], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -84,7 +94,12 @@ const MergePDF = () => {
       
       setIsProcessing(false);
       toast.success(`${files.length} PDFs merged successfully!`);
-    }, 3000);
+    } catch (error) {
+      console.error("Error merging PDFs:", error);
+      setIsProcessing(false);
+      setProgress(0);
+      toast.error("Failed to merge PDFs. Please ensure all files are valid PDFs.");
+    }
   };
 
   return (
