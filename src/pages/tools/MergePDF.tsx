@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ToolPage from "@/components/ToolPage";
 import FileUploader from "@/components/FileUploader";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,10 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { PDFDocument } from "pdf-lib";
+import * as pdfjsLib from "pdfjs-dist";
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 const MergePDF = () => {
   const [files, setFiles] = useState<File[]>([]);
@@ -16,6 +20,7 @@ const MergePDF = () => {
   const [progress, setProgress] = useState(0);
   const [scanBeforeMerge, setScanBeforeMerge] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [thumbnails, setThumbnails] = useState<{ [key: string]: string }>({});
 
   const handleDragStart = (index: number) => {
     setDraggedIndex(index);
@@ -39,9 +44,64 @@ const MergePDF = () => {
   };
 
   const removeFile = (index: number) => {
+    const fileKey = `${files[index].name}-${index}`;
+    const newThumbnails = { ...thumbnails };
+    delete newThumbnails[fileKey];
+    setThumbnails(newThumbnails);
+    
     const newFiles = files.filter((_, i) => i !== index);
     setFiles(newFiles);
   };
+
+  const generateThumbnail = async (file: File, index: number): Promise<string> => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const page = await pdf.getPage(1);
+      
+      const viewport = page.getViewport({ scale: 0.5 });
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      
+      if (!context) throw new Error("Could not get canvas context");
+      
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      
+      await page.render({
+        canvasContext: context,
+        viewport: viewport,
+        canvas: canvas,
+      }).promise;
+      
+      return canvas.toDataURL();
+    } catch (error) {
+      console.error("Error generating thumbnail:", error);
+      return "";
+    }
+  };
+
+  useEffect(() => {
+    const generateThumbnails = async () => {
+      const newThumbnails: { [key: string]: string } = {};
+      
+      for (let i = 0; i < files.length; i++) {
+        const fileKey = `${files[i].name}-${i}`;
+        if (!thumbnails[fileKey]) {
+          const thumbnail = await generateThumbnail(files[i], i);
+          newThumbnails[fileKey] = thumbnail;
+        }
+      }
+      
+      if (Object.keys(newThumbnails).length > 0) {
+        setThumbnails(prev => ({ ...prev, ...newThumbnails }));
+      }
+    };
+    
+    if (files.length > 0) {
+      generateThumbnails();
+    }
+  }, [files]);
 
   const handleMerge = async () => {
     if (files.length < 2) {
@@ -126,39 +186,57 @@ const MergePDF = () => {
               </p>
               
               <div className="space-y-2">
-                {files.map((file, index) => (
-                  <div
-                    key={`${file.name}-${index}`}
-                    draggable
-                    onDragStart={() => handleDragStart(index)}
-                    onDragOver={(e) => handleDragOver(e, index)}
-                    onDragEnd={handleDragEnd}
-                    className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-all cursor-move ${
-                      draggedIndex === index
-                        ? "border-primary bg-primary/5 scale-105"
-                        : "border-border bg-background hover:border-primary/50"
-                    }`}
-                  >
-                    <GripVertical className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                    <div className="flex items-center justify-center w-8 h-8 rounded-md bg-primary/10 text-primary font-semibold text-sm flex-shrink-0">
-                      {index + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{file.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {(file.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeFile(index)}
-                      className="flex-shrink-0 hover:bg-destructive/10 hover:text-destructive"
+                {files.map((file, index) => {
+                  const fileKey = `${file.name}-${index}`;
+                  const thumbnail = thumbnails[fileKey];
+                  
+                  return (
+                    <div
+                      key={fileKey}
+                      draggable
+                      onDragStart={() => handleDragStart(index)}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragEnd={handleDragEnd}
+                      className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-all cursor-move ${
+                        draggedIndex === index
+                          ? "border-primary bg-primary/5 scale-105"
+                          : "border-border bg-background hover:border-primary/50"
+                      }`}
                     >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+                      <GripVertical className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                      <div className="flex items-center justify-center w-8 h-8 rounded-md bg-primary/10 text-primary font-semibold text-sm flex-shrink-0">
+                        {index + 1}
+                      </div>
+                      {thumbnail ? (
+                        <div className="w-16 h-20 rounded border border-border overflow-hidden flex-shrink-0 bg-muted">
+                          <img 
+                            src={thumbnail} 
+                            alt={`Preview of ${file.name}`}
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-16 h-20 rounded border border-border overflow-hidden flex-shrink-0 bg-muted flex items-center justify-center">
+                          <FileText className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{file.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeFile(index)}
+                        className="flex-shrink-0 hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  );
+                })}
               </div>
             </Card>
 
