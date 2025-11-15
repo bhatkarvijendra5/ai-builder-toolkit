@@ -16,14 +16,13 @@ const Hero = () => {
             <span>All tools are 100% free</span>
           </div>
           
-          <h1 className="mb-6 text-4xl font-bold tracking-tight md:text-6xl lg:text-7xl">
-            Every tool you need to work with{" "}
+          <h1 className="mb-6 text-3xl font-bold tracking-tight md:text-5xl lg:text-6xl">
             <span className="gradient-primary bg-clip-text text-transparent">
-              PDFs and Images
+              Work Faster. Convert Smarter. Create Better.
             </span>
           </h1>
           
-          <p className="mb-8 text-lg text-muted-foreground md:text-xl">
+          <p className="mb-12 text-base text-muted-foreground md:text-lg">
             Merge, split, compress, convert, and edit your documents with professional-grade tools.
             Fast, secure, and completely free.
           </p>
