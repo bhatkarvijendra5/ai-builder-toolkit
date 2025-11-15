@@ -80,13 +80,12 @@ const MergePDF = () => {
       
       setProgress(100);
       
-      // Create download
-      const pdfBytes = new Uint8Array(mergedPdfBytes);
-      const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      // Create download with proper PDF bytes
+      const blob = new Blob([new Uint8Array(mergedPdfBytes)], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `merged-pdf-${Date.now()}.pdf`;
+      link.download = `pdftools-merge-pdf-${Date.now()}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
