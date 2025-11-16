@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import MergePDF from "./pages/tools/MergePDF";
+import SplitPDF from "./pages/tools/SplitPDF";
 import ConvertImage from "./pages/tools/ConvertImage";
 
 const queryClient = new QueryClient();
@@ -19,6 +20,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/tools/merge-pdf" element={<MergePDF />} />
+          <Route path="/tools/split-pdf" element={<SplitPDF />} />
           <Route path="/tools/convert-image" element={<ConvertImage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
