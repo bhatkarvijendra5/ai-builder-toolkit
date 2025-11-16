@@ -130,11 +130,12 @@ const SplitPDF = () => {
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
+      // Process pages sequentially to avoid overwhelming the browser
       for (const pageData of selectedPages) {
         const page = await pdf.getPage(pageData.pageNumber);
-        const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better quality
+        const viewport = page.getViewport({ scale: 2.5 }); // Higher scale for better quality
         const canvas = document.createElement("canvas");
-        const context = canvas.getContext("2d");
+        const context = canvas.getContext("2d", { alpha: false });
 
         if (!context) {
           throw new Error("Failed to get canvas context");
@@ -143,37 +144,55 @@ const SplitPDF = () => {
         canvas.width = viewport.width;
         canvas.height = viewport.height;
 
+        // Fill with white background for better JPEG compatibility
+        context.fillStyle = '#FFFFFF';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+
         await page.render({
           canvasContext: context,
           viewport: viewport,
           canvas: canvas,
         } as any).promise;
 
-        // Convert to JPEG with high quality
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              const timestamp = Date.now();
-              a.download = `pdftools-split-pdf-page-${pageData.pageNumber}-${timestamp}.jpg`;
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-              URL.revokeObjectURL(url);
-            }
-          },
-          "image/jpeg",
-          0.95
-        );
+        // Convert canvas to blob with proper JPEG encoding
+        await new Promise<void>((resolve) => {
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                // Create download link with proper MIME type
+                const url = URL.createObjectURL(new Blob([blob], { type: 'image/jpeg' }));
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `pdftools-page-${pageData.pageNumber}.jpg`;
+                a.style.display = 'none';
+                
+                document.body.appendChild(a);
+                a.click();
+                
+                // Clean up with slight delay to ensure download starts
+                setTimeout(() => {
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                  resolve();
+                }, 100);
+              } else {
+                resolve();
+              }
+            },
+            "image/jpeg",
+            0.92
+          );
+        });
+
+        // Small delay between downloads to prevent browser blocking
+        await new Promise(resolve => setTimeout(resolve, 150));
       }
 
       toast({
-        title: "Download Started",
-        description: `Downloading ${selectedPages.length} page${
+        title: "Download Complete",
+        description: `Successfully downloaded ${selectedPages.length} JPEG file${
           selectedPages.length > 1 ? "s" : ""
-        } as JPEG files.`,
+        }. Check your downloads folder.`,
       });
     } catch (error) {
       console.error("Error converting pages:", error);
