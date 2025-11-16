@@ -160,9 +160,9 @@ const tools = [
   },
   {
     title: "AI Document Analyzer",
-    description: "Analyze and summarize documents with AI",
+    description: "Scan handwritten notes and convert to text",
     icon: Sparkles,
-    href: "/tools/ai-analyzer",
+    href: "/tools/document-analyzer",
     category: "AI Tools",
   },
 ];
