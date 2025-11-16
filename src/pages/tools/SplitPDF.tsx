@@ -163,7 +163,7 @@ const SplitPDF = () => {
                 const url = URL.createObjectURL(new Blob([blob], { type: 'image/jpeg' }));
                 const a = document.createElement("a");
                 a.href = url;
-                a.download = `pdftools-page-${pageData.pageNumber}.jpg`;
+                a.download = `pdftools-split-pdf-page-${pageData.pageNumber}.jpg`;
                 a.style.display = 'none';
                 
                 document.body.appendChild(a);
