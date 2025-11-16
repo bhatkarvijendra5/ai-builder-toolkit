@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound";
 import MergePDF from "./pages/tools/MergePDF";
 import SplitPDF from "./pages/tools/SplitPDF";
 import ConvertImage from "./pages/tools/ConvertImage";
+import DocumentAnalyzer from "./pages/tools/DocumentAnalyzer";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/tools/merge-pdf" element={<MergePDF />} />
           <Route path="/tools/split-pdf" element={<SplitPDF />} />
           <Route path="/tools/convert-image" element={<ConvertImage />} />
+          <Route path="/tools/document-analyzer" element={<DocumentAnalyzer />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
