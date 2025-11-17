@@ -13,12 +13,14 @@ const DocumentAnalyzer = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [extractedText, setExtractedText] = useState<string>("");
+  const [detectedLanguages, setDetectedLanguages] = useState<string[]>([]);
   const [outputFormat, setOutputFormat] = useState<string>("text");
 
   const handleFileSelect = (files: File[]) => {
     if (files.length > 0) {
       setSelectedFile(files[0]);
       setExtractedText("");
+      setDetectedLanguages([]);
     }
   };
 
@@ -32,6 +34,7 @@ const DocumentAnalyzer = () => {
       if (target.files && target.files.length > 0) {
         setSelectedFile(target.files[0]);
         setExtractedText("");
+        setDetectedLanguages([]);
       }
     };
     input.click();
@@ -68,6 +71,7 @@ const DocumentAnalyzer = () => {
       }
 
       setExtractedText(data.text);
+      setDetectedLanguages(data.languages || []);
       toast.success("Document analyzed successfully!");
     } catch (error) {
       console.error('Error analyzing document:', error);
@@ -217,6 +221,24 @@ const DocumentAnalyzer = () => {
 
           {extractedText && (
             <div className="space-y-4">
+              {detectedLanguages.length > 0 && (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                  <Label className="mb-2 block text-sm font-semibold">
+                    Detected Languages:
+                  </Label>
+                  <div className="flex flex-wrap gap-2">
+                    {detectedLanguages.map((lang, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary"
+                      >
+                        {lang}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="rounded-lg border p-4">
                 <Label className="mb-2 block">Extracted Text:</Label>
                 <div className="max-h-96 overflow-y-auto rounded bg-muted p-4">
