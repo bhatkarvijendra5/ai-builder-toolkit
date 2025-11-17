@@ -218,6 +218,7 @@ const SplitPDF = () => {
           accept={{ "application/pdf": [".pdf"] }}
           maxFiles={1}
           onFilesSelected={handleFileSelected}
+          acceptedFileTypes="PDF"
         />
 
         {isProcessing && (
