@@ -36,14 +36,14 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are an expert multilingual OCR system specialized in accurately transcribing handwritten and printed text from images in ANY language. Detect and preserve the original language(s) in the document - whether it is English, Hindi, Arabic, Chinese, or any other language, including mixed-language content. Extract all text with high precision in the EXACT language(s) it appears in the image, maintaining the original formatting, structure, and layout. For tables, preserve the tabular structure. Be extremely accurate with spelling, punctuation, and language-specific characters.'
+            content: 'You are an expert multilingual OCR system specialized in accurately transcribing handwritten and printed text from images in ANY language. Detect and preserve the original language(s) in the document - whether it is English, Hindi, Arabic, Chinese, or any other language, including mixed-language content. Extract all text with high precision in the EXACT language(s) it appears in the image, maintaining the original formatting, structure, and layout. For tables, preserve the tabular structure. Be extremely accurate with spelling, punctuation, and language-specific characters. You must respond in JSON format.'
           },
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: `Please analyze this image and extract all text accurately. ${outputFormat === 'excel' ? 'If there are tables or structured data, format them clearly with proper rows and columns.' : 'Maintain the original formatting and structure.'}`
+                text: `Please analyze this image and extract all text accurately. ${outputFormat === 'excel' ? 'If there are tables or structured data, format them clearly with proper rows and columns.' : 'Maintain the original formatting and structure.'} Respond in JSON format with two fields: "text" containing the extracted text, and "languages" containing an array of detected language names (e.g., ["English"], ["Hindi"], ["English", "Hindi"]).`
               },
               {
                 type: 'image_url',
@@ -54,6 +54,7 @@ serve(async (req) => {
             ]
           }
         ],
+        response_format: { type: "json_object" },
       }),
     });
 
@@ -76,11 +77,15 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const extractedText = data.choices[0].message.content;
+    const result = JSON.parse(data.choices[0].message.content);
 
     console.log('Document analysis completed successfully');
+    console.log('Detected languages:', result.languages);
 
-    return new Response(JSON.stringify({ text: extractedText }), {
+    return new Response(JSON.stringify({ 
+      text: result.text,
+      languages: result.languages 
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
