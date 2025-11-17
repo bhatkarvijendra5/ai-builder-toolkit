@@ -36,7 +36,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are an expert OCR system specialized in accurately transcribing handwritten and printed text from images. Extract all text with high precision, maintaining the original formatting, structure, and layout as much as possible. For tables, preserve the tabular structure. Be extremely accurate with spelling and punctuation.'
+            content: 'You are an expert multilingual OCR system specialized in accurately transcribing handwritten and printed text from images in ANY language. Detect and preserve the original language(s) in the document - whether it is English, Hindi, Arabic, Chinese, or any other language, including mixed-language content. Extract all text with high precision in the EXACT language(s) it appears in the image, maintaining the original formatting, structure, and layout. For tables, preserve the tabular structure. Be extremely accurate with spelling, punctuation, and language-specific characters.'
           },
           {
             role: 'user',
