@@ -37,7 +37,11 @@ const SplitPDF = () => {
 
     try {
       const arrayBuffer = await selectedFile.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pdf = await pdfjsLib.getDocument({ 
+        data: arrayBuffer,
+        useSystemFonts: true,
+        standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/standard_fonts/',
+      }).promise;
       const totalPages = pdf.numPages;
 
       const pagePreviewsPromises: Promise<PagePreview>[] = [];
@@ -128,7 +132,11 @@ const SplitPDF = () => {
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pdf = await pdfjsLib.getDocument({ 
+        data: arrayBuffer,
+        useSystemFonts: true,
+        standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/standard_fonts/',
+      }).promise;
 
       // Process pages sequentially to avoid overwhelming the browser
       for (const pageData of selectedPages) {
