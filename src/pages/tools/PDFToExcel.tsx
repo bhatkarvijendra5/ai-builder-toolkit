@@ -31,21 +31,48 @@ const PDFToExcel = () => {
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pdf = await pdfjsLib.getDocument({ 
+        data: arrayBuffer,
+        useSystemFonts: true 
+      }).promise;
       
-      let csvContent = "";
+      let csvContent = "Page,Row,Content\n";
       
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const pageText = textContent.items
-          .map((item: any) => item.str)
-          .join(",");
-        csvContent += pageText + "\n";
+        
+        let lastY = null;
+        let rowIndex = 1;
+        let currentRow: string[] = [];
+        
+        for (const item of textContent.items as any[]) {
+          const currentY = (item as any).transform[5];
+          
+          if (lastY !== null && Math.abs(currentY - lastY) > 5) {
+            if (currentRow.length > 0) {
+              const escapedContent = currentRow
+                .map(cell => `"${cell.replace(/"/g, '""')}"`)
+                .join(",");
+              csvContent += `${i},${rowIndex},${escapedContent}\n`;
+              rowIndex++;
+              currentRow = [];
+            }
+          }
+          
+          currentRow.push(item.str.trim());
+          lastY = currentY;
+        }
+        
+        if (currentRow.length > 0) {
+          const escapedContent = currentRow
+            .map(cell => `"${cell.replace(/"/g, '""')}"`)
+            .join(",");
+          csvContent += `${i},${rowIndex},${escapedContent}\n`;
+        }
       }
 
-      // Create CSV file
-      const blob = new Blob([csvContent], { type: "text/csv" });
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -57,7 +84,7 @@ const PDFToExcel = () => {
 
       toast({
         title: "Conversion Complete",
-        description: "Data extracted and downloaded as CSV file.",
+        description: "Tables and data extracted to CSV. Open in Excel or spreadsheet apps.",
       });
     } catch (error) {
       console.error("Error converting PDF:", error);

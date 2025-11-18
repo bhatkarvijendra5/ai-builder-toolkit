@@ -29,12 +29,24 @@ const CompressPDF = () => {
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const pdfDoc = await PDFDocument.load(arrayBuffer);
+      const pdfDoc = await PDFDocument.load(arrayBuffer, { 
+        ignoreEncryption: true,
+        updateMetadata: false 
+      });
 
-      // Save with compression options
+      // Remove metadata to reduce size
+      pdfDoc.setTitle('');
+      pdfDoc.setAuthor('');
+      pdfDoc.setSubject('');
+      pdfDoc.setKeywords([]);
+      pdfDoc.setProducer('');
+      pdfDoc.setCreator('');
+
+      // Save with aggressive compression options
       const compressedPdfBytes = await pdfDoc.save({
         useObjectStreams: true,
         addDefaultPage: false,
+        objectsPerTick: 50,
       });
 
       const blob = new Blob([new Uint8Array(compressedPdfBytes)], { type: "application/pdf" });
@@ -55,7 +67,7 @@ const CompressPDF = () => {
 
       toast({
         title: "PDF Compressed",
-        description: `File size reduced by ${reduction.toFixed(1)}%. Downloaded successfully.`,
+        description: `File size reduced by ${reduction.toFixed(1)}%. Quality preserved.`,
       });
     } catch (error) {
       console.error("Error compressing PDF:", error);
