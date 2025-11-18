@@ -31,20 +31,37 @@ const PDFToWord = () => {
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pdf = await pdfjsLib.getDocument({ 
+        data: arrayBuffer,
+        useSystemFonts: true 
+      }).promise;
       
       let fullText = "";
       
       for (let i = 1; i <= pdf.numPages; i++) {
+        fullText += `\n--- Page ${i} ---\n\n`;
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const pageText = textContent.items
-          .map((item: any) => item.str)
-          .join(" ");
-        fullText += pageText + "\n\n";
+        
+        let lastY = null;
+        let line = "";
+        
+        for (const item of textContent.items as any[]) {
+          if (lastY !== null && Math.abs((item as any).transform[5] - lastY) > 5) {
+            fullText += line.trim() + "\n";
+            line = "";
+          }
+          line += item.str + " ";
+          lastY = (item as any).transform[5];
+        }
+        
+        if (line.trim()) {
+          fullText += line.trim() + "\n";
+        }
+        
+        fullText += "\n";
       }
 
-      // Create a simple text file (Word conversion requires external services)
       const blob = new Blob([fullText], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -57,7 +74,7 @@ const PDFToWord = () => {
 
       toast({
         title: "Conversion Complete",
-        description: "Text extracted and downloaded as TXT file.",
+        description: "Text extracted with formatting preserved as TXT file.",
       });
     } catch (error) {
       console.error("Error converting PDF:", error);

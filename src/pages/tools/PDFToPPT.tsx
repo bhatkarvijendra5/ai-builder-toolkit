@@ -31,20 +31,26 @@ const PDFToPPT = () => {
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pdf = await pdfjsLib.getDocument({ 
+        data: arrayBuffer,
+        useSystemFonts: true 
+      }).promise;
       
-      const images: string[] = [];
+      const images: { dataUrl: string; width: number; height: number }[] = [];
       
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 2 });
+        const viewport = page.getViewport({ scale: 3 });
         const canvas = document.createElement("canvas");
-        const context = canvas.getContext("2d");
+        const context = canvas.getContext("2d", { alpha: false });
 
         if (!context) continue;
 
         canvas.width = viewport.width;
         canvas.height = viewport.height;
+
+        context.fillStyle = "white";
+        context.fillRect(0, 0, canvas.width, canvas.height);
 
         await page.render({
           canvasContext: context,
@@ -52,23 +58,26 @@ const PDFToPPT = () => {
           canvas: canvas,
         } as any).promise;
 
-        images.push(canvas.toDataURL("image/png"));
+        images.push({
+          dataUrl: canvas.toDataURL("image/jpeg", 0.95),
+          width: viewport.width,
+          height: viewport.height
+        });
       }
 
-      // Download each page as an image
       for (let i = 0; i < images.length; i++) {
         const a = document.createElement("a");
-        a.href = images[i];
-        a.download = `slide-${i + 1}.png`;
+        a.href = images[i].dataUrl;
+        a.download = `slide-${String(i + 1).padStart(3, '0')}.jpg`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 150));
       }
 
       toast({
         title: "Conversion Complete",
-        description: `${images.length} slides extracted as PNG images.`,
+        description: `${images.length} slides extracted as high-quality JPEG images.`,
       });
     } catch (error) {
       console.error("Error converting PDF:", error);
