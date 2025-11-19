@@ -11,7 +11,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { pipeline, env } from '@huggingface/transformers';
 
 // Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url
+).toString();
 
 // Configure transformers.js
 env.allowLocalModels = false;
@@ -75,31 +78,17 @@ const SignPDF = () => {
     }
 
     const selectedFile = files[0];
-    
-    // Validate file type
-    if (!selectedFile.type.includes('pdf') && !selectedFile.name.toLowerCase().endsWith('.pdf')) {
-      toast({
-        title: "Invalid File",
-        description: "Please upload a PDF file.",
-        variant: "destructive",
-      });
-      return;
-    }
 
     setFile(selectedFile);
     setIsProcessing(true);
 
     try {
       const arrayBuffer = await selectedFile.arrayBuffer();
-      
-      // Load PDF with better error handling
-      const loadingTask = pdfjsLib.getDocument({ 
+
+      const pdf = await pdfjsLib.getDocument({
         data: arrayBuffer,
         useSystemFonts: true,
-        standardFontDataUrl: `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/standard_fonts/`,
-      });
-      
-      const pdf = await loadingTask.promise;
+      }).promise;
       const pages: string[] = [];
 
       for (let i = 1; i <= pdf.numPages; i++) {
@@ -138,15 +127,15 @@ const SignPDF = () => {
     } catch (error: any) {
       console.error("Error loading PDF:", error);
       let errorMessage = "Failed to load PDF. Please try again.";
-      
-      if (error.message?.includes('Invalid PDF')) {
+
+      if (error.message?.includes("Invalid PDF")) {
         errorMessage = "This PDF file appears to be corrupted or invalid.";
-      } else if (error.message?.includes('password')) {
+      } else if (error.message?.includes("password")) {
         errorMessage = "This PDF is password protected. Please remove the password first.";
-      } else if (error.name === 'PasswordException') {
+      } else if (error.name === "PasswordException") {
         errorMessage = "This PDF is password protected. Please use an unprotected PDF.";
       }
-      
+
       toast({
         title: "Error Loading PDF",
         description: errorMessage,
