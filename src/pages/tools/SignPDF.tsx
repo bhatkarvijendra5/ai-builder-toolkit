@@ -75,12 +75,31 @@ const SignPDF = () => {
     }
 
     const selectedFile = files[0];
+    
+    // Validate file type
+    if (!selectedFile.type.includes('pdf') && !selectedFile.name.toLowerCase().endsWith('.pdf')) {
+      toast({
+        title: "Invalid File",
+        description: "Please upload a PDF file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setFile(selectedFile);
     setIsProcessing(true);
 
     try {
       const arrayBuffer = await selectedFile.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
+      // Load PDF with better error handling
+      const loadingTask = pdfjsLib.getDocument({ 
+        data: arrayBuffer,
+        useSystemFonts: true,
+        standardFontDataUrl: `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/standard_fonts/`,
+      });
+      
+      const pdf = await loadingTask.promise;
       const pages: string[] = [];
 
       for (let i = 1; i <= pdf.numPages; i++) {
@@ -89,7 +108,10 @@ const SignPDF = () => {
         const canvas = document.createElement("canvas");
         const context = canvas.getContext("2d");
 
-        if (!context) continue;
+        if (!context) {
+          console.warn(`Failed to get context for page ${i}`);
+          continue;
+        }
 
         canvas.height = viewport.height;
         canvas.width = viewport.width;
@@ -103,19 +125,35 @@ const SignPDF = () => {
         pages.push(canvas.toDataURL("image/png"));
       }
 
+      if (pages.length === 0) {
+        throw new Error("No pages could be rendered from the PDF");
+      }
+
       setPdfPages(pages);
       setCurrentPage(0);
       toast({
         title: "PDF Loaded",
         description: `${pdf.numPages} pages ready for signing`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading PDF:", error);
+      let errorMessage = "Failed to load PDF. Please try again.";
+      
+      if (error.message?.includes('Invalid PDF')) {
+        errorMessage = "This PDF file appears to be corrupted or invalid.";
+      } else if (error.message?.includes('password')) {
+        errorMessage = "This PDF is password protected. Please remove the password first.";
+      } else if (error.name === 'PasswordException') {
+        errorMessage = "This PDF is password protected. Please use an unprotected PDF.";
+      }
+      
       toast({
-        title: "Error",
-        description: "Failed to load PDF. Please try again.",
+        title: "Error Loading PDF",
+        description: errorMessage,
         variant: "destructive",
       });
+      setFile(null);
+      setPdfPages([]);
     } finally {
       setIsProcessing(false);
     }
@@ -416,10 +454,17 @@ const SignPDF = () => {
     <ToolPage title="Sign PDF" description="Add your signature to PDF documents">
       <div className="space-y-6">
         <FileUploader
-          accept={{ "application/pdf": [".pdf"] }}
+          accept={{ 
+            "application/pdf": [".pdf"],
+            "application/x-pdf": [".pdf"],
+            "application/acrobat": [".pdf"],
+            "application/vnd.pdf": [".pdf"],
+            "text/pdf": [".pdf"],
+            "text/x-pdf": [".pdf"]
+          }}
           maxFiles={1}
           onFilesSelected={handleFileSelected}
-          acceptedFileTypes="PDF"
+          acceptedFileTypes="PDF files"
         />
 
         {file && pdfPages.length > 0 && (
