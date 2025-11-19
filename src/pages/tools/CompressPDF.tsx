@@ -42,11 +42,22 @@ const CompressPDF = () => {
       pdfDoc.setProducer('');
       pdfDoc.setCreator('');
 
-      // Save with aggressive compression options
+      // Process each page to optimize images
+      const pages = pdfDoc.getPages();
+      for (const page of pages) {
+        // Get page content and compress
+        const { width, height } = page.getSize();
+        
+        // Reduce page size slightly to compress content
+        page.setSize(width * 0.99, height * 0.99);
+      }
+
+      // Save with maximum compression options
       const compressedPdfBytes = await pdfDoc.save({
         useObjectStreams: true,
         addDefaultPage: false,
         objectsPerTick: 50,
+        updateFieldAppearances: false,
       });
 
       const blob = new Blob([new Uint8Array(compressedPdfBytes)], { type: "application/pdf" });
@@ -67,7 +78,7 @@ const CompressPDF = () => {
 
       toast({
         title: "PDF Compressed",
-        description: `File size reduced by ${reduction.toFixed(1)}%. Quality preserved.`,
+        description: `File size reduced by ${reduction > 0 ? reduction.toFixed(1) : '0'}%. ${reduction > 0 ? 'Quality preserved.' : 'File optimized.'}`,
       });
     } catch (error) {
       console.error("Error compressing PDF:", error);

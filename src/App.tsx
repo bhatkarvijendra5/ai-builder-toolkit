@@ -14,6 +14,7 @@ import PDFToWord from "./pages/tools/PDFToWord";
 import PDFToExcel from "./pages/tools/PDFToExcel";
 import PDFToPPT from "./pages/tools/PDFToPPT";
 import WordToPDF from "./pages/tools/WordToPDF";
+import SignPDF from "./pages/tools/SignPDF";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/tools/pdf-to-excel" element={<PDFToExcel />} />
           <Route path="/tools/pdf-to-ppt" element={<PDFToPPT />} />
           <Route path="/tools/word-to-pdf" element={<WordToPDF />} />
+          <Route path="/tools/sign-pdf" element={<SignPDF />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

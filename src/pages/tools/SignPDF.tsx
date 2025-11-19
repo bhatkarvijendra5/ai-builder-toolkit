@@ -1,0 +1,665 @@
+import { useState, useRef, useEffect } from "react";
+import ToolPage from "@/components/ToolPage";
+import FileUploader from "@/components/FileUploader";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Download, Loader2, Pen, Upload, Camera, Trash2, RotateCw, Save } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { PDFDocument, degrees } from "pdf-lib";
+import * as pdfjsLib from "pdfjs-dist";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { pipeline, env } from '@huggingface/transformers';
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
+// Configure transformers.js
+env.allowLocalModels = false;
+env.useBrowserCache = false;
+
+interface Signature {
+  id: string;
+  dataUrl: string;
+  name: string;
+}
+
+interface PlacedSignature {
+  id: string;
+  dataUrl: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  page: number;
+}
+
+const SignPDF = () => {
+  const [file, setFile] = useState<File | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [pdfPages, setPdfPages] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [zoom, setZoom] = useState(1);
+  const [signatures, setSignatures] = useState<Signature[]>([]);
+  const [placedSignatures, setPlacedSignatures] = useState<PlacedSignature[]>([]);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [penColor, setPenColor] = useState("#000000");
+  const [selectedSignature, setSelectedSignature] = useState<string | null>(null);
+  const [draggingSignature, setDraggingSignature] = useState<string | null>(null);
+  const [isRemovingBg, setIsRemovingBg] = useState(false);
+
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawCanvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const pageCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Load saved signatures from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("pdf-signatures");
+    if (saved) {
+      try {
+        setSignatures(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to load signatures:", e);
+      }
+    }
+  }, []);
+
+  const handleFileSelected = async (files: File[]) => {
+    if (files.length === 0) {
+      setFile(null);
+      setPdfPages([]);
+      setPlacedSignatures([]);
+      return;
+    }
+
+    const selectedFile = files[0];
+    setFile(selectedFile);
+    setIsProcessing(true);
+
+    try {
+      const arrayBuffer = await selectedFile.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pages: string[] = [];
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 2 });
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+
+        if (!context) continue;
+
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        await page.render({
+          canvasContext: context,
+          viewport: viewport,
+          canvas: canvas,
+        }).promise;
+
+        pages.push(canvas.toDataURL("image/png"));
+      }
+
+      setPdfPages(pages);
+      setCurrentPage(0);
+      toast({
+        title: "PDF Loaded",
+        description: `${pdf.numPages} pages ready for signing`,
+      });
+    } catch (error) {
+      console.error("Error loading PDF:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load PDF. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Drawing signature functions
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = drawCanvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    setIsDrawing(true);
+    ctx.beginPath();
+    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+
+    const canvas = drawCanvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.strokeStyle = penColor;
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+  };
+
+  const clearDrawing = () => {
+    const canvas = drawCanvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const saveDrawnSignature = () => {
+    const canvas = drawCanvasRef.current;
+    if (!canvas) return;
+
+    const dataUrl = canvas.toDataURL("image/png");
+    const newSig: Signature = {
+      id: Date.now().toString(),
+      dataUrl,
+      name: `Drawn Signature ${signatures.length + 1}`,
+    };
+
+    const updated = [...signatures, newSig];
+    setSignatures(updated);
+    localStorage.setItem("pdf-signatures", JSON.stringify(updated));
+    clearDrawing();
+    toast({
+      title: "Signature Saved",
+      description: "Your drawn signature has been saved",
+    });
+  };
+
+  // Background removal
+  const removeBackground = async (imageDataUrl: string): Promise<string> => {
+    setIsRemovingBg(true);
+    try {
+      const segmenter = await pipeline('image-segmentation', 'Xenova/segformer-b0-finetuned-ade-512-512', {
+        device: 'webgpu',
+      });
+
+      const result = await segmenter(imageDataUrl);
+
+      if (!result || !Array.isArray(result) || result.length === 0 || !result[0].mask) {
+        throw new Error('Invalid segmentation result');
+      }
+
+      // Create canvas to process image
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = imageDataUrl;
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) throw new Error('Could not get canvas context');
+
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+
+      // Apply inverted mask to alpha channel
+      for (let i = 0; i < result[0].mask.data.length; i++) {
+        const alpha = Math.round((1 - result[0].mask.data[i]) * 255);
+        data[i * 4 + 3] = alpha;
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      return canvas.toDataURL("image/png");
+    } catch (error) {
+      console.error("Error removing background:", error);
+      toast({
+        title: "Background Removal Failed",
+        description: "Using original image instead",
+        variant: "destructive",
+      });
+      return imageDataUrl;
+    } finally {
+      setIsRemovingBg(false);
+    }
+  };
+
+  const handleUploadSignature = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const dataUrl = event.target?.result as string;
+      const processedDataUrl = await removeBackground(dataUrl);
+
+      const newSig: Signature = {
+        id: Date.now().toString(),
+        dataUrl: processedDataUrl,
+        name: `Uploaded Signature ${signatures.length + 1}`,
+      };
+
+      const updated = [...signatures, newSig];
+      setSignatures(updated);
+      localStorage.setItem("pdf-signatures", JSON.stringify(updated));
+      toast({
+        title: "Signature Uploaded",
+        description: "Background removed and signature saved",
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCameraSignature = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const dataUrl = event.target?.result as string;
+      const processedDataUrl = await removeBackground(dataUrl);
+
+      const newSig: Signature = {
+        id: Date.now().toString(),
+        dataUrl: processedDataUrl,
+        name: `Scanned Signature ${signatures.length + 1}`,
+      };
+
+      const updated = [...signatures, newSig];
+      setSignatures(updated);
+      localStorage.setItem("pdf-signatures", JSON.stringify(updated));
+      toast({
+        title: "Signature Scanned",
+        description: "Background removed and signature saved",
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const deleteSignature = (id: string) => {
+    const updated = signatures.filter((sig) => sig.id !== id);
+    setSignatures(updated);
+    localStorage.setItem("pdf-signatures", JSON.stringify(updated));
+    toast({
+      title: "Signature Deleted",
+      description: "Signature removed from library",
+    });
+  };
+
+  // Place signature on page
+  const placeSignature = (signatureId: string) => {
+    const signature = signatures.find((sig) => sig.id === signatureId);
+    if (!signature) return;
+
+    const newPlaced: PlacedSignature = {
+      id: `${Date.now()}-${Math.random()}`,
+      dataUrl: signature.dataUrl,
+      x: 100,
+      y: 100,
+      width: 150,
+      height: 75,
+      rotation: 0,
+      page: currentPage,
+    };
+
+    setPlacedSignatures([...placedSignatures, newPlaced]);
+  };
+
+  const applyToAllPages = (signatureId: string) => {
+    const signature = signatures.find((sig) => sig.id === signatureId);
+    if (!signature) return;
+
+    const newPlaced: PlacedSignature[] = pdfPages.map((_, index) => ({
+      id: `${Date.now()}-${Math.random()}-${index}`,
+      dataUrl: signature.dataUrl,
+      x: 100,
+      y: 100,
+      width: 150,
+      height: 75,
+      rotation: 0,
+      page: index,
+    }));
+
+    setPlacedSignatures([...placedSignatures, ...newPlaced]);
+    toast({
+      title: "Signature Applied",
+      description: `Signature added to all ${pdfPages.length} pages`,
+    });
+  };
+
+  const removeSignature = (id: string) => {
+    setPlacedSignatures(placedSignatures.filter((sig) => sig.id !== id));
+  };
+
+  const rotateSignature = (id: string) => {
+    setPlacedSignatures(
+      placedSignatures.map((sig) =>
+        sig.id === id ? { ...sig, rotation: (sig.rotation + 90) % 360 } : sig
+      )
+    );
+  };
+
+  // Export signed PDF
+  const exportSignedPDF = async () => {
+    if (!file) return;
+
+    setIsProcessing(true);
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfDoc = await PDFDocument.load(arrayBuffer);
+      const pages = pdfDoc.getPages();
+
+      for (const placed of placedSignatures) {
+        const page = pages[placed.page];
+        if (!page) continue;
+
+        const signatureImageBytes = await fetch(placed.dataUrl).then((res) => res.arrayBuffer());
+        const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
+
+        const { height: pageHeight } = page.getSize();
+
+        page.drawImage(signatureImage, {
+          x: placed.x,
+          y: pageHeight - placed.y - placed.height,
+          width: placed.width,
+          height: placed.height,
+          rotate: degrees(-placed.rotation),
+        });
+      }
+
+      const pdfBytes = await pdfDoc.save();
+      const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `signed-${file.name}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "PDF Signed",
+        description: "Your signed PDF has been downloaded",
+      });
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast({
+        title: "Error",
+        description: "Failed to export signed PDF",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <ToolPage title="Sign PDF" description="Add your signature to PDF documents">
+      <div className="space-y-6">
+        <FileUploader
+          accept={{ "application/pdf": [".pdf"] }}
+          maxFiles={1}
+          onFilesSelected={handleFileSelected}
+          acceptedFileTypes="PDF"
+        />
+
+        {file && pdfPages.length > 0 && (
+          <>
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Signature Library</h3>
+              <Tabs defaultValue="draw" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="draw">
+                    <Pen className="mr-2 h-4 w-4" />
+                    Draw
+                  </TabsTrigger>
+                  <TabsTrigger value="upload">
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload
+                  </TabsTrigger>
+                  <TabsTrigger value="camera">
+                    <Camera className="mr-2 h-4 w-4" />
+                    Scan
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="draw" className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex gap-2 items-center">
+                      <label className="text-sm">Pen Color:</label>
+                      <Button
+                        size="sm"
+                        variant={penColor === "#000000" ? "default" : "outline"}
+                        onClick={() => setPenColor("#000000")}
+                      >
+                        Black
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={penColor === "#0000FF" ? "default" : "outline"}
+                        onClick={() => setPenColor("#0000FF")}
+                      >
+                        Blue
+                      </Button>
+                    </div>
+                    <canvas
+                      ref={drawCanvasRef}
+                      width={500}
+                      height={200}
+                      className="border border-border rounded-md w-full cursor-crosshair"
+                      onMouseDown={startDrawing}
+                      onMouseMove={draw}
+                      onMouseUp={stopDrawing}
+                      onMouseLeave={stopDrawing}
+                    />
+                    <div className="flex gap-2">
+                      <Button onClick={clearDrawing} variant="outline" size="sm">
+                        Clear
+                      </Button>
+                      <Button onClick={saveDrawnSignature} size="sm">
+                        <Save className="mr-2 h-4 w-4" />
+                        Save Signature
+                      </Button>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="upload" className="space-y-4">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/jpg"
+                    onChange={handleUploadSignature}
+                    className="hidden"
+                  />
+                  <Button onClick={() => fileInputRef.current?.click()} disabled={isRemovingBg}>
+                    {isRemovingBg ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload Image
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-sm text-muted-foreground">
+                    Background will be automatically removed
+                  </p>
+                </TabsContent>
+
+                <TabsContent value="camera" className="space-y-4">
+                  <input
+                    ref={cameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleCameraSignature}
+                    className="hidden"
+                  />
+                  <Button onClick={() => cameraInputRef.current?.click()} disabled={isRemovingBg}>
+                    {isRemovingBg ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Camera className="mr-2 h-4 w-4" />
+                        Take Photo
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-sm text-muted-foreground">
+                    Background will be automatically removed and cropped
+                  </p>
+                </TabsContent>
+              </Tabs>
+
+              {signatures.length > 0 && (
+                <div className="mt-6">
+                  <h4 className="text-sm font-medium mb-3">Saved Signatures</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    {signatures.map((sig) => (
+                      <div key={sig.id} className="border border-border rounded-md p-2 space-y-2">
+                        <img src={sig.dataUrl} alt={sig.name} className="w-full h-20 object-contain bg-muted" />
+                        <div className="flex gap-1">
+                          <Button size="sm" onClick={() => placeSignature(sig.id)} className="flex-1">
+                            Place
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => applyToAllPages(sig.id)}>
+                            All Pages
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => deleteSignature(sig.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </Card>
+
+            <Card className="p-6">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">
+                    Page {currentPage + 1} of {pdfPages.length}
+                  </h3>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => setZoom(Math.max(0.5, zoom - 0.25))}>
+                      -
+                    </Button>
+                    <span className="text-sm px-2 py-1">{Math.round(zoom * 100)}%</span>
+                    <Button size="sm" variant="outline" onClick={() => setZoom(Math.min(2, zoom + 0.25))}>
+                      +
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="relative border border-border rounded-md overflow-auto max-h-[600px]">
+                  <div className="relative inline-block" style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}>
+                    <img src={pdfPages[currentPage]} alt={`Page ${currentPage + 1}`} className="w-full" />
+                    {placedSignatures
+                      .filter((sig) => sig.page === currentPage)
+                      .map((sig) => (
+                        <div
+                          key={sig.id}
+                          className="absolute cursor-move border-2 border-primary"
+                          style={{
+                            left: sig.x,
+                            top: sig.y,
+                            width: sig.width,
+                            height: sig.height,
+                            transform: `rotate(${sig.rotation}deg)`,
+                          }}
+                          draggable
+                          onDragEnd={(e) => {
+                            const rect = e.currentTarget.parentElement?.getBoundingClientRect();
+                            if (rect) {
+                              const newX = (e.clientX - rect.left) / zoom;
+                              const newY = (e.clientY - rect.top) / zoom;
+                              setPlacedSignatures(
+                                placedSignatures.map((s) =>
+                                  s.id === sig.id ? { ...s, x: newX, y: newY } : s
+                                )
+                              );
+                            }
+                          }}
+                        >
+                          <img src={sig.dataUrl} alt="Signature" className="w-full h-full object-contain" />
+                          <div className="absolute -top-8 right-0 flex gap-1">
+                            <Button size="sm" variant="secondary" onClick={() => rotateSignature(sig.id)}>
+                              <RotateCw className="h-3 w-3" />
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => removeSignature(sig.id)}>
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-2 justify-center">
+                  <Button
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                    disabled={currentPage === 0}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.min(pdfPages.length - 1, currentPage + 1))}
+                    disabled={currentPage === pdfPages.length - 1}
+                  >
+                    Next
+                  </Button>
+                </div>
+
+                <Button onClick={exportSignedPDF} disabled={isProcessing || placedSignatures.length === 0} size="lg" className="w-full">
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="mr-2 h-5 w-5" />
+                      Download Signed PDF
+                    </>
+                  )}
+                </Button>
+              </div>
+            </Card>
+          </>
+        )}
+      </div>
+    </ToolPage>
+  );
+};
+
+export default SignPDF;
