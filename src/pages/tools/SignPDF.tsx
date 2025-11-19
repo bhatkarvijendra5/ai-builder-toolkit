@@ -587,7 +587,7 @@ const SignPDF = () => {
                       .map((sig) => (
                         <div
                           key={sig.id}
-                          className="absolute cursor-move border-2 border-primary"
+                          className="absolute cursor-move border-2 border-primary group"
                           style={{
                             left: sig.x,
                             top: sig.y,
@@ -609,7 +609,33 @@ const SignPDF = () => {
                             }
                           }}
                         >
-                          <img src={sig.dataUrl} alt="Signature" className="w-full h-full object-contain" />
+                          <img src={sig.dataUrl} alt="Signature" className="w-full h-full object-contain pointer-events-none" />
+                          
+                          {/* Resize handle */}
+                          <div
+                            className="absolute -bottom-2 -right-2 w-4 h-4 bg-primary rounded-full cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity"
+                            draggable
+                            onDragStart={(e) => {
+                              e.stopPropagation();
+                            }}
+                            onDrag={(e) => {
+                              if (e.clientX === 0 && e.clientY === 0) return;
+                              e.stopPropagation();
+                              
+                              const rect = e.currentTarget.parentElement?.parentElement?.getBoundingClientRect();
+                              if (rect) {
+                                const newWidth = Math.max(50, (e.clientX - rect.left - sig.x * zoom) / zoom);
+                                const newHeight = Math.max(25, (e.clientY - rect.top - sig.y * zoom) / zoom);
+                                
+                                setPlacedSignatures(
+                                  placedSignatures.map((s) =>
+                                    s.id === sig.id ? { ...s, width: newWidth, height: newHeight } : s
+                                  )
+                                );
+                              }
+                            }}
+                          />
+                          
                           <div className="absolute -top-8 right-0 flex gap-1">
                             <Button size="sm" variant="secondary" onClick={() => rotateSignature(sig.id)}>
                               <RotateCw className="h-3 w-3" />
