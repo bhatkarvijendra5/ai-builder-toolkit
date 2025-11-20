@@ -17,6 +17,7 @@ import WordToPDF from "./pages/tools/WordToPDF";
 import SignPDF from "./pages/tools/SignPDF";
 import JPGToPDF from "./pages/tools/JPGToPDF";
 import PDFToJPG from "./pages/tools/PDFToJPG";
+import OrganizePDF from "./pages/tools/OrganizePDF";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
           <Route path="/tools/sign-pdf" element={<SignPDF />} />
           <Route path="/tools/jpg-to-pdf" element={<JPGToPDF />} />
           <Route path="/tools/pdf-to-jpg" element={<PDFToJPG />} />
+          <Route path="/tools/organize-pdf" element={<OrganizePDF />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
