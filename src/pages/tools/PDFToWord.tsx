@@ -6,9 +6,10 @@ import { Card } from "@/components/ui/card";
 import { Download, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import * as pdfjsLib from "pdfjs-dist";
+import { Document, Packer, Paragraph, TextRun } from "docx";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
+  "pdfjs-dist/build/pdf.worker.min.mjs",
   import.meta.url
 ).toString();
 
@@ -31,42 +32,76 @@ const PDFToWord = () => {
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ 
+      const pdf = await pdfjsLib.getDocument({
         data: arrayBuffer,
-        useSystemFonts: true 
+        useSystemFonts: true,
       }).promise;
-      
-      let fullText = "";
-      
+
+      const paragraphs: Paragraph[] = [];
+
       for (let i = 1; i <= pdf.numPages; i++) {
-        fullText += `\n--- Page ${i} ---\n\n`;
+        // Add page header
+        paragraphs.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `Page ${i}`,
+                bold: true,
+                size: 28,
+              }),
+            ],
+            spacing: { before: 240, after: 120 },
+          })
+        );
+
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        
+
         let lastY = null;
-        let line = "";
-        
+        let lineText = "";
+
         for (const item of textContent.items as any[]) {
-          if (lastY !== null && Math.abs((item as any).transform[5] - lastY) > 5) {
-            fullText += line.trim() + "\n";
-            line = "";
+          const currentY = (item as any).transform[5];
+          
+          if (lastY !== null && Math.abs(currentY - lastY) > 5) {
+            if (lineText.trim()) {
+              paragraphs.push(
+                new Paragraph({
+                  children: [new TextRun(lineText.trim())],
+                  spacing: { after: 120 },
+                })
+              );
+            }
+            lineText = "";
           }
-          line += item.str + " ";
-          lastY = (item as any).transform[5];
+          lineText += item.str + " ";
+          lastY = currentY;
         }
-        
-        if (line.trim()) {
-          fullText += line.trim() + "\n";
+
+        if (lineText.trim()) {
+          paragraphs.push(
+            new Paragraph({
+              children: [new TextRun(lineText.trim())],
+              spacing: { after: 120 },
+            })
+          );
         }
-        
-        fullText += "\n";
       }
 
-      const blob = new Blob([fullText], { type: "text/plain" });
+      const doc = new Document({
+        sections: [
+          {
+            properties: {},
+            children: paragraphs,
+          },
+        ],
+      });
+
+      const blob = await Packer.toBlob(doc);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = file.name.replace(".pdf", ".txt");
+      a.download = file.name.replace(".pdf", ".docx");
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -74,7 +109,7 @@ const PDFToWord = () => {
 
       toast({
         title: "Conversion Complete",
-        description: "Text extracted with formatting preserved as TXT file.",
+        description: "PDF converted to Word document successfully.",
       });
     } catch (error) {
       console.error("Error converting PDF:", error);
@@ -125,7 +160,7 @@ const PDFToWord = () => {
                 ) : (
                   <>
                     <Download className="mr-2 h-5 w-5" />
-                    Convert to Text
+                    Convert to Word
                   </>
                 )}
               </Button>
