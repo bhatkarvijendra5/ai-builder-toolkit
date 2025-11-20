@@ -7,10 +7,7 @@ import { Download, FileImage, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import * as pdfjsLib from "pdfjs-dist";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).toString();
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
 
 interface PagePreview {
   pageNumber: number;
@@ -40,7 +37,6 @@ const SplitPDF = () => {
       const pdf = await pdfjsLib.getDocument({ 
         data: arrayBuffer,
         useSystemFonts: true,
-        standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/standard_fonts/',
       }).promise;
       const totalPages = pdf.numPages;
 
@@ -135,7 +131,6 @@ const SplitPDF = () => {
       const pdf = await pdfjsLib.getDocument({ 
         data: arrayBuffer,
         useSystemFonts: true,
-        standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/standard_fonts/',
       }).promise;
 
       // Process pages sequentially to avoid overwhelming the browser
