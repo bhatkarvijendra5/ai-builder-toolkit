@@ -7,6 +7,7 @@ import { Download, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import * as pdfjsLib from "pdfjs-dist";
 import { Document, Packer, Paragraph, TextRun } from "docx";
+import { supabase } from "@/integrations/supabase/client";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
 
@@ -54,34 +55,85 @@ const PDFToWord = () => {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
 
-        let lastY = null;
-        let lineText = "";
+        // Check if page has minimal text (likely scanned/image-based)
+        const textItems = textContent.items as any[];
+        const totalText = textItems.map(item => item.str).join("").trim();
+        
+        let pageText = "";
 
-        for (const item of textContent.items as any[]) {
-          const currentY = (item as any).transform[5];
+        if (totalText.length < 50) {
+          // Likely a scanned page or image-based PDF, use OCR
+          console.log(`Page ${i} has minimal text, using OCR...`);
           
-          if (lastY !== null && Math.abs(currentY - lastY) > 5) {
-            if (lineText.trim()) {
-              paragraphs.push(
-                new Paragraph({
-                  children: [new TextRun(lineText.trim())],
-                  spacing: { after: 120 },
-                })
+          const viewport = page.getViewport({ scale: 2.0 });
+          const canvas = document.createElement("canvas");
+          const context = canvas.getContext("2d");
+          
+          if (context) {
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            
+            await page.render({
+              canvasContext: context,
+              viewport: viewport,
+            }).promise;
+            
+            const imageDataUrl = canvas.toDataURL("image/jpeg", 0.8);
+            
+            try {
+              const { data: ocrData, error: ocrError } = await supabase.functions.invoke(
+                "analyze-document",
+                {
+                  body: { image: imageDataUrl, outputFormat: "word" }
+                }
               );
+
+              if (ocrError) throw ocrError;
+              
+              if (ocrData?.text) {
+                pageText = ocrData.text;
+                console.log(`OCR extracted ${pageText.length} characters from page ${i}`);
+              }
+            } catch (ocrError) {
+              console.error(`OCR failed for page ${i}:`, ocrError);
+              // Fall back to whatever text was available
+              pageText = totalText;
             }
-            lineText = "";
           }
-          lineText += item.str + " ";
-          lastY = currentY;
+        } else {
+          // Extract text normally
+          let lastY = null;
+          let lineText = "";
+
+          for (const item of textItems) {
+            const currentY = (item as any).transform[5];
+            
+            if (lastY !== null && Math.abs(currentY - lastY) > 5) {
+              if (lineText.trim()) {
+                pageText += lineText.trim() + "\n";
+              }
+              lineText = "";
+            }
+            lineText += item.str + " ";
+            lastY = currentY;
+          }
+
+          if (lineText.trim()) {
+            pageText += lineText.trim();
+          }
         }
 
-        if (lineText.trim()) {
-          paragraphs.push(
-            new Paragraph({
-              children: [new TextRun(lineText.trim())],
-              spacing: { after: 120 },
-            })
-          );
+        // Add extracted text as paragraphs
+        if (pageText.trim()) {
+          const lines = pageText.split("\n").filter(line => line.trim());
+          for (const line of lines) {
+            paragraphs.push(
+              new Paragraph({
+                children: [new TextRun(line.trim())],
+                spacing: { after: 120 },
+              })
+            );
+          }
         }
       }
 
