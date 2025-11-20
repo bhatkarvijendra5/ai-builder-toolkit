@@ -11,10 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { pipeline, env } from '@huggingface/transformers';
 
 // Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url
-).toString();
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
 
 // Configure transformers.js
 env.allowLocalModels = false;
@@ -108,7 +105,6 @@ const SignPDF = () => {
         await page.render({
           canvasContext: context,
           viewport: viewport,
-          canvas: canvas,
         }).promise;
 
         pages.push(canvas.toDataURL("image/png"));
