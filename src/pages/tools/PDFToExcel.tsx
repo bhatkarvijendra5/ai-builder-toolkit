@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Download, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import * as pdfjsLib from "pdfjs-dist";
+import { supabase } from "@/integrations/supabase/client";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
 
@@ -39,33 +40,81 @@ const PDFToExcel = () => {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
         
-        let lastY = null;
-        let rowIndex = 1;
-        let currentRow: string[] = [];
+        const textItems = textContent.items as any[];
+        const totalText = textItems.map(item => item.str).join("").trim();
         
-        for (const item of textContent.items as any[]) {
-          const currentY = (item as any).transform[5];
+        let rowIndex = 1;
+        
+        if (totalText.length < 50) {
+          // Likely a scanned page or image-based PDF, use OCR
+          console.log(`Page ${i} has minimal text, using OCR...`);
           
-          if (lastY !== null && Math.abs(currentY - lastY) > 5) {
-            if (currentRow.length > 0) {
-              const escapedContent = currentRow
-                .map(cell => `"${cell.replace(/"/g, '""')}"`)
-                .join(",");
-              csvContent += `${i},${rowIndex},${escapedContent}\n`;
-              rowIndex++;
-              currentRow = [];
+          const viewport = page.getViewport({ scale: 2.0 });
+          const canvas = document.createElement("canvas");
+          const context = canvas.getContext("2d");
+          
+          if (context) {
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            
+            await page.render({
+              canvasContext: context,
+              viewport: viewport,
+            }).promise;
+            
+            const imageDataUrl = canvas.toDataURL("image/jpeg", 0.8);
+            
+            try {
+              const { data: ocrData, error: ocrError } = await supabase.functions.invoke(
+                "analyze-document",
+                {
+                  body: { image: imageDataUrl, outputFormat: "excel" }
+                }
+              );
+
+              if (ocrError) throw ocrError;
+              
+              if (ocrData?.text) {
+                const lines = ocrData.text.split("\n").filter(line => line.trim());
+                for (const line of lines) {
+                  const escapedContent = `"${line.trim().replace(/"/g, '""')}"`;
+                  csvContent += `${i},${rowIndex},${escapedContent}\n`;
+                  rowIndex++;
+                }
+              }
+            } catch (ocrError) {
+              console.error(`OCR failed for page ${i}:`, ocrError);
             }
           }
+        } else {
+          // Extract text normally
+          let lastY = null;
+          let currentRow: string[] = [];
           
-          currentRow.push(item.str.trim());
-          lastY = currentY;
-        }
-        
-        if (currentRow.length > 0) {
-          const escapedContent = currentRow
-            .map(cell => `"${cell.replace(/"/g, '""')}"`)
-            .join(",");
-          csvContent += `${i},${rowIndex},${escapedContent}\n`;
+          for (const item of textItems) {
+            const currentY = (item as any).transform[5];
+            
+            if (lastY !== null && Math.abs(currentY - lastY) > 5) {
+              if (currentRow.length > 0) {
+                const escapedContent = currentRow
+                  .map(cell => `"${cell.replace(/"/g, '""')}"`)
+                  .join(",");
+                csvContent += `${i},${rowIndex},${escapedContent}\n`;
+                rowIndex++;
+                currentRow = [];
+              }
+            }
+            
+            currentRow.push(item.str.trim());
+            lastY = currentY;
+          }
+          
+          if (currentRow.length > 0) {
+            const escapedContent = currentRow
+              .map(cell => `"${cell.replace(/"/g, '""')}"`)
+              .join(",");
+            csvContent += `${i},${rowIndex},${escapedContent}\n`;
+          }
         }
       }
 
