@@ -188,6 +188,7 @@ const AddPageNumbers = () => {
           size: fontSize[0],
           font,
           color: rgb(0, 0, 0),
+          rotate: degrees(180),
         });
       });
 
