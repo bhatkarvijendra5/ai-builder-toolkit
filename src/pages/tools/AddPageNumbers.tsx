@@ -164,6 +164,9 @@ const AddPageNumbers = () => {
         const pageNumber = `${index + 1}`;
         const textWidth = font.widthOfTextAtSize(pageNumber, fontSize[0]);
         const margin = 30;
+        
+        // Get the page's rotation to orient the page number correctly
+        const pageRotation = pages[index]?.rotation || 0;
 
         // Calculate horizontal position
         let x: number;
@@ -188,7 +191,7 @@ const AddPageNumbers = () => {
           size: fontSize[0],
           font,
           color: rgb(0, 0, 0),
-          rotate: degrees(180),
+          rotate: degrees(pageRotation),
         });
       });
 
