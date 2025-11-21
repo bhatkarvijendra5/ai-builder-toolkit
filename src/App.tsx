@@ -19,6 +19,7 @@ import JPGToPDF from "./pages/tools/JPGToPDF";
 import PDFToJPG from "./pages/tools/PDFToJPG";
 import OrganizePDF from "./pages/tools/OrganizePDF";
 import AddPageNumbers from "./pages/tools/AddPageNumbers";
+import ResizeImage from "./pages/tools/ResizeImage";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
           <Route path="/tools/pdf-to-jpg" element={<PDFToJPG />} />
           <Route path="/tools/organize-pdf" element={<OrganizePDF />} />
           <Route path="/tools/page-numbers" element={<AddPageNumbers />} />
+          <Route path="/tools/resize-image" element={<ResizeImage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
