@@ -233,6 +233,66 @@ const AddPageNumbers = () => {
 
         {pages.length > 0 && (
           <>
+            <div className="space-y-4 rounded-lg border border-border bg-card p-6">
+              <h3 className="text-lg font-semibold">Preview</h3>
+              <p className="text-sm text-muted-foreground">
+                See how page numbers will appear on your pages
+              </p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                {[0, Math.floor(pages.length / 2), pages.length - 1]
+                  .filter((idx, i, arr) => arr.indexOf(idx) === i && pages[idx])
+                  .slice(0, 3)
+                  .map((pageIndex) => {
+                    const page = pages[pageIndex];
+                    const pageNumber = `${pageIndex + 1}`;
+                    
+                    // Calculate position based on settings
+                    let positionClass = "";
+                    if (verticalPosition === "top") {
+                      positionClass += "top-4 ";
+                    } else {
+                      positionClass += "bottom-4 ";
+                    }
+                    
+                    if (horizontalPosition === "left") {
+                      positionClass += "left-4";
+                    } else if (horizontalPosition === "right") {
+                      positionClass += "right-4";
+                    } else {
+                      positionClass += "left-1/2 -translate-x-1/2";
+                    }
+
+                    return (
+                      <div key={pageIndex} className="relative">
+                        <div className="relative overflow-hidden rounded border border-border">
+                          <img
+                            src={page.thumbnail}
+                            alt={`Preview page ${pageNumber}`}
+                            className="h-auto w-full"
+                            style={{ transform: `rotate(${page.rotation}deg)` }}
+                          />
+                          <div
+                            className={`absolute ${positionClass} rounded bg-background/90 px-2 py-1 text-foreground shadow-md`}
+                            style={{
+                              fontSize: `${fontSize[0]}px`,
+                              fontWeight: fontStyle === "bold" ? "bold" : "normal",
+                              fontStyle: fontStyle === "italic" ? "italic" : "normal",
+                              transform: `rotate(${page.rotation}deg) ${horizontalPosition === "center" ? "translateX(-50%)" : ""}`,
+                              transformOrigin: "center",
+                            }}
+                          >
+                            {pageNumber}
+                          </div>
+                        </div>
+                        <div className="mt-1 text-center text-xs text-muted-foreground">
+                          Page {pageNumber}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
               {pages.map((page, index) => (
                 <div
