@@ -49,10 +49,17 @@ serve(async (req) => {
     const protectedPdfBytes = await pdfDoc.save();
 
     console.log("Converting PDF to base64 for response");
-    // Convert to base64 for JSON response
-    const base64Output = btoa(
-      String.fromCharCode(...new Uint8Array(protectedPdfBytes))
-    );
+    // Convert to base64 in chunks to avoid stack overflow
+    const uint8Array = new Uint8Array(protectedPdfBytes);
+    let outputBinaryString = '';
+    const chunkSize = 8192; // Process 8KB at a time
+    
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.slice(i, i + chunkSize);
+      outputBinaryString += String.fromCharCode(...chunk);
+    }
+    
+    const base64Output = btoa(outputBinaryString);
 
     console.log("Returning protected PDF");
     return new Response(
