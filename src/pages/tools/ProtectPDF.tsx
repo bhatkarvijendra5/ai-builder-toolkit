@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Download, Loader2, Lock, Info } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
 
 const ProtectPDF = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -44,27 +45,38 @@ const ProtectPDF = () => {
     setIsProcessing(true);
 
     try {
-      const formData = new FormData();
-      formData.append("pdf", file);
-      formData.append("password", password);
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/protect-pdf`,
-        {
-          method: "POST",
-          body: formData,
-          headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-        }
+      // Convert file to base64 for edge function
+      const arrayBuffer = await file.arrayBuffer();
+      const base64 = btoa(
+        new Uint8Array(arrayBuffer).reduce(
+          (data, byte) => data + String.fromCharCode(byte),
+          ""
+        )
       );
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to protect PDF");
+      const { data, error } = await supabase.functions.invoke("protect-pdf", {
+        body: { 
+          pdfBase64: base64,
+          password: password,
+          fileName: file.name 
+        },
+      });
+
+      if (error) {
+        throw new Error(error.message || "Failed to protect PDF");
       }
 
-      const blob = await response.blob();
+      if (!data || !data.pdfBase64) {
+        throw new Error("No PDF data received from server");
+      }
+
+      // Convert base64 back to blob
+      const binaryString = atob(data.pdfBase64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
