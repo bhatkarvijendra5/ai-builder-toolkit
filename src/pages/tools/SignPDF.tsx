@@ -261,6 +261,24 @@ const SignPDF = () => {
         description: "Using original image instead",
         variant: "destructive",
       });
+      
+      // Convert to PNG even if background removal fails
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = imageDataUrl;
+      });
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0);
+        return canvas.toDataURL("image/png");
+      }
+      
       return imageDataUrl;
     } finally {
       setIsRemovingBg(false);
@@ -510,7 +528,12 @@ const SignPDF = () => {
         if (!page) continue;
 
         const signatureImageBytes = await fetch(placed.dataUrl).then((res) => res.arrayBuffer());
-        const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
+        
+        // Detect image format and use appropriate embed method
+        const isPng = placed.dataUrl.startsWith('data:image/png');
+        const signatureImage = isPng 
+          ? await pdfDoc.embedPng(signatureImageBytes)
+          : await pdfDoc.embedJpg(signatureImageBytes);
 
         const { height: pageHeight } = page.getSize();
 
