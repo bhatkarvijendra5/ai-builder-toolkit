@@ -1,7 +1,9 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card } from "@/components/ui/card";
-import { FileText, Zap, Shield, Globe } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileText, Zap, Shield, Globe, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const AboutUs = () => {
   const values = [
@@ -35,7 +37,13 @@ const AboutUs = () => {
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="flex-1">
-        <div className="container mx-auto px-4 py-16">
+        <div className="container mx-auto px-4 py-8">
+          <Link to="/">
+            <Button variant="ghost" className="mb-6">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Home
+            </Button>
+          </Link>
           <div className="mx-auto max-w-4xl">
             <div className="mb-12 text-center">
               <h1 className="mb-4 text-4xl font-bold md:text-5xl">About Us</h1>
