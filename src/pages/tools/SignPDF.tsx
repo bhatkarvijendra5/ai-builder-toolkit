@@ -46,13 +46,14 @@ const SignPDF = () => {
   const [penColor, setPenColor] = useState("#000000");
   const [selectedSignature, setSelectedSignature] = useState<string | null>(null);
   const [draggingSignature, setDraggingSignature] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isRemovingBg, setIsRemovingBg] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawCanvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const pageCanvasRef = useRef<HTMLCanvasElement>(null);
+  const pageContainerRef = useRef<HTMLDivElement>(null);
 
   // Load saved signatures from localStorage
   useEffect(() => {
@@ -379,6 +380,41 @@ const SignPDF = () => {
     );
   };
 
+  // Drag handlers for signatures
+  const handleSignatureMouseDown = (e: React.MouseEvent, sig: PlacedSignature) => {
+    e.preventDefault();
+    const container = pageContainerRef.current?.parentElement;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left - sig.x * zoom;
+    const offsetY = e.clientY - rect.top - sig.y * zoom;
+
+    setDraggingSignature(sig.id);
+    setDragOffset({ x: offsetX, y: offsetY });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!draggingSignature) return;
+
+    const container = pageContainerRef.current?.parentElement;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const newX = (e.clientX - rect.left - dragOffset.x) / zoom;
+    const newY = (e.clientY - rect.top - dragOffset.y) / zoom;
+
+    setPlacedSignatures(
+      placedSignatures.map((sig) =>
+        sig.id === draggingSignature ? { ...sig, x: Math.max(0, newX), y: Math.max(0, newY) } : sig
+      )
+    );
+  };
+
+  const handleMouseUp = () => {
+    setDraggingSignature(null);
+  };
+
   // Export signed PDF
   const exportSignedPDF = async () => {
     if (!file) return;
@@ -609,8 +645,17 @@ const SignPDF = () => {
                   </div>
                 </div>
 
-                <div className="relative border border-border rounded-md overflow-auto max-h-[600px]">
-                  <div className="relative inline-block" style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}>
+                <div 
+                  className="relative border border-border rounded-md overflow-auto max-h-[600px]"
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                >
+                  <div 
+                    ref={pageContainerRef}
+                    className="relative inline-block" 
+                    style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}
+                  >
                     <img src={pdfPages[currentPage]} alt={`Page ${currentPage + 1}`} className="w-full" />
                     {placedSignatures
                       .filter((sig) => sig.page === currentPage)
@@ -625,48 +670,11 @@ const SignPDF = () => {
                             height: sig.height,
                             transform: `rotate(${sig.rotation}deg)`,
                           }}
-                          draggable
-                          onDragEnd={(e) => {
-                            const rect = e.currentTarget.parentElement?.getBoundingClientRect();
-                            if (rect) {
-                              const newX = (e.clientX - rect.left) / zoom;
-                              const newY = (e.clientY - rect.top) / zoom;
-                              setPlacedSignatures(
-                                placedSignatures.map((s) =>
-                                  s.id === sig.id ? { ...s, x: newX, y: newY } : s
-                                )
-                              );
-                            }
-                          }}
+                          onMouseDown={(e) => handleSignatureMouseDown(e, sig)}
                         >
                           <img src={sig.dataUrl} alt="Signature" className="w-full h-full object-contain pointer-events-none" />
                           
-                          {/* Resize handle */}
-                          <div
-                            className="absolute -bottom-2 -right-2 w-4 h-4 bg-primary rounded-full cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity"
-                            draggable
-                            onDragStart={(e) => {
-                              e.stopPropagation();
-                            }}
-                            onDrag={(e) => {
-                              if (e.clientX === 0 && e.clientY === 0) return;
-                              e.stopPropagation();
-                              
-                              const rect = e.currentTarget.parentElement?.parentElement?.getBoundingClientRect();
-                              if (rect) {
-                                const newWidth = Math.max(50, (e.clientX - rect.left - sig.x * zoom) / zoom);
-                                const newHeight = Math.max(25, (e.clientY - rect.top - sig.y * zoom) / zoom);
-                                
-                                setPlacedSignatures(
-                                  placedSignatures.map((s) =>
-                                    s.id === sig.id ? { ...s, width: newWidth, height: newHeight } : s
-                                  )
-                                );
-                              }
-                            }}
-                          />
-                          
-                          <div className="absolute -top-8 right-0 flex gap-1">
+                          <div className="absolute -top-8 right-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button size="sm" variant="secondary" onClick={() => rotateSignature(sig.id)}>
                               <RotateCw className="h-3 w-3" />
                             </Button>
