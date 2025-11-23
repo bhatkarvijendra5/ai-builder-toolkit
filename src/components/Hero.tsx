@@ -20,43 +20,10 @@ const Hero = () => {
             Work Faster. Convert Smarter. Create Better.
           </h1>
           
-          <p className="mb-12 text-base text-muted-foreground md:text-lg">
+          <p className="mb-8 text-base text-muted-foreground md:text-lg">
             Merge, split, compress, convert, and edit your documents with professional-grade tools.
             Fast, secure, and completely free.
           </p>
-          
-          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Button
-              size="lg"
-              className="gradient-primary group shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all"
-              onClick={scrollToTools}
-            >
-              Explore All Tools
-              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-2 hover:bg-secondary"
-            >
-              Learn More
-            </Button>
-          </div>
-
-          <div className="mt-16 grid grid-cols-3 gap-8 text-center">
-            <div>
-              <div className="text-3xl font-bold text-primary md:text-4xl">28+</div>
-              <div className="mt-1 text-sm text-muted-foreground">Tools Available</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-primary md:text-4xl">100%</div>
-              <div className="mt-1 text-sm text-muted-foreground">Free to Use</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-primary md:text-4xl">Fast</div>
-              <div className="mt-1 text-sm text-muted-foreground">Processing</div>
-            </div>
-          </div>
         </div>
       </div>
     </section>
