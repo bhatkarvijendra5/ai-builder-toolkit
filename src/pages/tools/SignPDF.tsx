@@ -382,48 +382,61 @@ const SignPDF = () => {
     );
   };
 
+  // Unified position getter for mouse and touch events
+  const getEventPosition = (e: React.MouseEvent | React.TouchEvent) => {
+    if ('touches' in e && e.touches.length > 0) {
+      return { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
+    }
+    return { clientX: (e as React.MouseEvent).clientX, clientY: (e as React.MouseEvent).clientY };
+  };
+
   // Move handler for signatures
-  const handleMoveMouseDown = (e: React.MouseEvent, sig: PlacedSignature) => {
+  const handleMoveStart = (e: React.MouseEvent | React.TouchEvent, sig: PlacedSignature) => {
     e.preventDefault();
     e.stopPropagation();
     const container = pageContainerRef.current?.parentElement;
     if (!container) return;
 
+    const { clientX, clientY } = getEventPosition(e);
     const rect = container.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left - sig.x * zoom;
-    const offsetY = e.clientY - rect.top - sig.y * zoom;
+    const offsetX = clientX - rect.left - sig.x * zoom;
+    const offsetY = clientY - rect.top - sig.y * zoom;
 
     setDraggingSignature(sig.id);
     setDragOffset({ x: offsetX, y: offsetY });
   };
 
   // Resize handler for signatures
-  const handleResizeMouseDown = (e: React.MouseEvent, sig: PlacedSignature, handle: string) => {
+  const handleResizeStart = (e: React.MouseEvent | React.TouchEvent, sig: PlacedSignature, handle: string) => {
     e.preventDefault();
     e.stopPropagation();
     const container = pageContainerRef.current?.parentElement;
     if (!container) return;
 
-    const rect = container.getBoundingClientRect();
+    const { clientX, clientY } = getEventPosition(e);
     setResizingSignature({ id: sig.id, handle });
     setResizeStartData({
       x: sig.x,
       y: sig.y,
       width: sig.width,
       height: sig.height,
-      mouseX: e.clientX,
-      mouseY: e.clientY,
+      mouseX: clientX,
+      mouseY: clientY,
     });
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!draggingSignature && !resizingSignature) return;
+
+    const { clientX, clientY } = getEventPosition(e);
+
     if (draggingSignature) {
       const container = pageContainerRef.current?.parentElement;
       if (!container) return;
 
       const rect = container.getBoundingClientRect();
-      const newX = (e.clientX - rect.left - dragOffset.x) / zoom;
-      const newY = (e.clientY - rect.top - dragOffset.y) / zoom;
+      const newX = (clientX - rect.left - dragOffset.x) / zoom;
+      const newY = (clientY - rect.top - dragOffset.y) / zoom;
 
       setPlacedSignatures(
         placedSignatures.map((sig) =>
@@ -431,8 +444,8 @@ const SignPDF = () => {
         )
       );
     } else if (resizingSignature && resizeStartData) {
-      const deltaX = (e.clientX - resizeStartData.mouseX) / zoom;
-      const deltaY = (e.clientY - resizeStartData.mouseY) / zoom;
+      const deltaX = (clientX - resizeStartData.mouseX) / zoom;
+      const deltaY = (clientY - resizeStartData.mouseY) / zoom;
 
       setPlacedSignatures(
         placedSignatures.map((sig) => {
@@ -475,7 +488,7 @@ const SignPDF = () => {
     }
   };
 
-  const handleMouseUp = () => {
+  const handleEnd = () => {
     setDraggingSignature(null);
     setResizingSignature(null);
     setResizeStartData(null);
@@ -713,9 +726,11 @@ const SignPDF = () => {
 
                 <div 
                   className="relative border border-border rounded-md overflow-auto max-h-[600px]"
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseUp}
+                  onMouseMove={handleMove}
+                  onMouseUp={handleEnd}
+                  onMouseLeave={handleEnd}
+                  onTouchMove={handleMove}
+                  onTouchEnd={handleEnd}
                 >
                   <div 
                     ref={pageContainerRef}
@@ -739,30 +754,35 @@ const SignPDF = () => {
                         >
                           <img src={sig.dataUrl} alt="Signature" className="w-full h-full object-contain pointer-events-none" />
                           
-                          {/* Move handle at top-center */}
+                          {/* Move handle at top-center - larger for mobile */}
                           <div 
-                            className="absolute -top-6 left-1/2 -translate-x-1/2 w-8 h-6 bg-primary rounded-t-md flex items-center justify-center cursor-move opacity-0 group-hover:opacity-100 transition-opacity"
-                            onMouseDown={(e) => handleMoveMouseDown(e, sig)}
+                            className="absolute -top-8 left-1/2 -translate-x-1/2 w-10 h-8 bg-primary rounded-t-md flex items-center justify-center cursor-move opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity touch-none"
+                            onMouseDown={(e) => handleMoveStart(e, sig)}
+                            onTouchStart={(e) => handleMoveStart(e, sig)}
                           >
-                            <GripVertical className="h-4 w-4 text-primary-foreground" />
+                            <GripVertical className="h-5 w-5 text-primary-foreground" />
                           </div>
                           
-                          {/* Corner resize handles */}
+                          {/* Corner resize handles - larger for mobile */}
                           <div 
-                            className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-background border-2 border-primary rounded-full cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity"
-                            onMouseDown={(e) => handleResizeMouseDown(e, sig, 'nw')}
+                            className="absolute -top-2 -left-2 w-6 h-6 bg-background border-2 border-primary rounded-full cursor-nwse-resize opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity touch-none flex items-center justify-center"
+                            onMouseDown={(e) => handleResizeStart(e, sig, 'nw')}
+                            onTouchStart={(e) => handleResizeStart(e, sig, 'nw')}
                           />
                           <div 
-                            className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-background border-2 border-primary rounded-full cursor-nesw-resize opacity-0 group-hover:opacity-100 transition-opacity"
-                            onMouseDown={(e) => handleResizeMouseDown(e, sig, 'ne')}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-background border-2 border-primary rounded-full cursor-nesw-resize opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity touch-none flex items-center justify-center"
+                            onMouseDown={(e) => handleResizeStart(e, sig, 'ne')}
+                            onTouchStart={(e) => handleResizeStart(e, sig, 'ne')}
                           />
                           <div 
-                            className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-background border-2 border-primary rounded-full cursor-nesw-resize opacity-0 group-hover:opacity-100 transition-opacity"
-                            onMouseDown={(e) => handleResizeMouseDown(e, sig, 'sw')}
+                            className="absolute -bottom-2 -left-2 w-6 h-6 bg-background border-2 border-primary rounded-full cursor-nesw-resize opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity touch-none flex items-center justify-center"
+                            onMouseDown={(e) => handleResizeStart(e, sig, 'sw')}
+                            onTouchStart={(e) => handleResizeStart(e, sig, 'sw')}
                           />
                           <div 
-                            className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-background border-2 border-primary rounded-full cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity"
-                            onMouseDown={(e) => handleResizeMouseDown(e, sig, 'se')}
+                            className="absolute -bottom-2 -right-2 w-6 h-6 bg-background border-2 border-primary rounded-full cursor-nwse-resize opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity touch-none flex items-center justify-center"
+                            onMouseDown={(e) => handleResizeStart(e, sig, 'se')}
+                            onTouchStart={(e) => handleResizeStart(e, sig, 'se')}
                           />
                           
                           <div className="absolute -top-8 right-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
