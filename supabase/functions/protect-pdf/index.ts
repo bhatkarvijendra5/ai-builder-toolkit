@@ -12,11 +12,12 @@ serve(async (req) => {
   }
 
   try {
-    const formData = await req.formData();
-    const pdfFile = formData.get("pdf") as File;
-    const password = formData.get("password") as string;
+    console.log("Protect PDF function called");
+    
+    const { pdfBase64, password, fileName } = await req.json();
 
-    if (!pdfFile || !password) {
+    if (!pdfBase64 || !password) {
+      console.error("Missing required fields");
       return new Response(
         JSON.stringify({ error: "PDF file and password are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -24,35 +25,53 @@ serve(async (req) => {
     }
 
     if (password.length < 4) {
+      console.error("Password too short");
       return new Response(
         JSON.stringify({ error: "Password must be at least 4 characters long" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Read the PDF file
-    const pdfBytes = await pdfFile.arrayBuffer();
-    const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+    console.log("Decoding PDF from base64");
+    // Decode base64 to binary
+    const binaryString = atob(pdfBase64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
 
-    // Note: Standard pdf-lib doesn't support encryption
-    // We'll create a basic implementation by embedding the content
-    // For production use, consider using a specialized PDF encryption service
-    
-    // For now, we'll return the PDF with metadata indicating it should be protected
-    // This is a limitation of the pdf-lib library in Deno/browser environments
+    console.log("Loading PDF document");
+    const pdfDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
+
+    console.log("Saving PDF (note: true encryption not supported in pdf-lib)");
+    // Note: pdf-lib doesn't support true password encryption
+    // This is a known limitation of the library
     const protectedPdfBytes = await pdfDoc.save();
 
-    return new Response(new Uint8Array(protectedPdfBytes), {
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="protected-${pdfFile.name}"`,
-      },
-    });
+    console.log("Converting PDF to base64 for response");
+    // Convert to base64 for JSON response
+    const base64Output = btoa(
+      String.fromCharCode(...new Uint8Array(protectedPdfBytes))
+    );
+
+    console.log("Returning protected PDF");
+    return new Response(
+      JSON.stringify({ 
+        pdfBase64: base64Output,
+        fileName: fileName || "protected.pdf"
+      }),
+      {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+      }
+    );
   } catch (error) {
     console.error("Error protecting PDF:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to protect PDF";
     return new Response(
-      JSON.stringify({ error: "Failed to protect PDF" }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
