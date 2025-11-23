@@ -756,7 +756,7 @@ const SignPDF = () => {
                           
                           {/* Move handle at top-center - larger for mobile */}
                           <div 
-                            className="absolute -top-8 left-1/2 -translate-x-1/2 w-10 h-8 bg-primary rounded-t-md flex items-center justify-center cursor-move opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity touch-none"
+                            className="absolute -top-8 left-1/2 -translate-x-1/2 w-10 h-8 bg-primary rounded-t-md flex items-center justify-center cursor-move opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity touch-none z-20"
                             onMouseDown={(e) => handleMoveStart(e, sig)}
                             onTouchStart={(e) => handleMoveStart(e, sig)}
                           >
@@ -765,22 +765,22 @@ const SignPDF = () => {
                           
                           {/* Corner resize handles - larger for mobile */}
                           <div 
-                            className="absolute -top-2 -left-2 w-6 h-6 bg-background border-2 border-primary rounded-full cursor-nwse-resize opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity touch-none flex items-center justify-center"
+                            className="absolute -top-2 -left-2 w-6 h-6 bg-background border-2 border-primary rounded-full cursor-nwse-resize opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity touch-none flex items-center justify-center z-10"
                             onMouseDown={(e) => handleResizeStart(e, sig, 'nw')}
                             onTouchStart={(e) => handleResizeStart(e, sig, 'nw')}
                           />
                           <div 
-                            className="absolute -top-2 -right-2 w-6 h-6 bg-background border-2 border-primary rounded-full cursor-nesw-resize opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity touch-none flex items-center justify-center"
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-background border-2 border-primary rounded-full cursor-nesw-resize opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity touch-none flex items-center justify-center z-10"
                             onMouseDown={(e) => handleResizeStart(e, sig, 'ne')}
                             onTouchStart={(e) => handleResizeStart(e, sig, 'ne')}
                           />
                           <div 
-                            className="absolute -bottom-2 -left-2 w-6 h-6 bg-background border-2 border-primary rounded-full cursor-nesw-resize opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity touch-none flex items-center justify-center"
+                            className="absolute -bottom-2 -left-2 w-6 h-6 bg-background border-2 border-primary rounded-full cursor-nesw-resize opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity touch-none flex items-center justify-center z-10"
                             onMouseDown={(e) => handleResizeStart(e, sig, 'sw')}
                             onTouchStart={(e) => handleResizeStart(e, sig, 'sw')}
                           />
                           <div 
-                            className="absolute -bottom-2 -right-2 w-6 h-6 bg-background border-2 border-primary rounded-full cursor-nwse-resize opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity touch-none flex items-center justify-center"
+                            className="absolute -bottom-2 -right-2 w-6 h-6 bg-background border-2 border-primary rounded-full cursor-nwse-resize opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity touch-none flex items-center justify-center z-10"
                             onMouseDown={(e) => handleResizeStart(e, sig, 'se')}
                             onTouchStart={(e) => handleResizeStart(e, sig, 'se')}
                           />
