@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Download } from "lucide-react";
 import { toast } from "sonner";
 
@@ -19,6 +20,7 @@ const ResizeImage = () => {
   const [resizeMode, setResizeMode] = useState<"dimensions" | "percentage">("dimensions");
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [outputFormat, setOutputFormat] = useState<"image/jpeg" | "image/png">("image/jpeg");
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -93,7 +95,7 @@ const ResizeImage = () => {
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
       ctx.drawImage(img, 0, 0, newWidth, newHeight);
-      setPreviewUrl(canvas.toDataURL(file?.type || "image/png", 1.0));
+      setPreviewUrl(canvas.toDataURL(outputFormat, 0.95));
     }
   };
 
@@ -121,15 +123,15 @@ const ResizeImage = () => {
             if (blob) resolve(blob);
             else reject(new Error("Failed to create blob"));
           },
-          file?.type || "image/png",
-          1.0
+          outputFormat,
+          0.95
         );
       });
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       const fileName = file?.name.replace(/\.[^/.]+$/, "") || "resized-image";
-      const extension = file?.type.split("/")[1] || "png";
+      const extension = outputFormat === "image/jpeg" ? "jpg" : "png";
       link.download = `${fileName}-${width}x${height}.${extension}`;
       link.href = url;
       link.click();
@@ -216,6 +218,19 @@ const ResizeImage = () => {
                 <p className="text-sm text-muted-foreground">
                   Scale image by {percentage}%
                 </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="format">Output Format</Label>
+                <Select value={outputFormat} onValueChange={(value) => setOutputFormat(value as "image/jpeg" | "image/png")}>
+                  <SelectTrigger id="format">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="image/jpeg">JPG</SelectItem>
+                    <SelectItem value="image/png">PNG</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
