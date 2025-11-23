@@ -20,6 +20,7 @@ import PDFToJPG from "./pages/tools/PDFToJPG";
 import OrganizePDF from "./pages/tools/OrganizePDF";
 import AddPageNumbers from "./pages/tools/AddPageNumbers";
 import ResizeImage from "./pages/tools/ResizeImage";
+import WatermarkPDF from "./pages/tools/WatermarkPDF";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ const App = () => (
           <Route path="/tools/organize-pdf" element={<OrganizePDF />} />
           <Route path="/tools/page-numbers" element={<AddPageNumbers />} />
           <Route path="/tools/resize-image" element={<ResizeImage />} />
+          <Route path="/tools/watermark-pdf" element={<WatermarkPDF />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
