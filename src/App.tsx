@@ -22,6 +22,9 @@ import AddPageNumbers from "./pages/tools/AddPageNumbers";
 import ResizeImage from "./pages/tools/ResizeImage";
 import WatermarkPDF from "./pages/tools/WatermarkPDF";
 import ProtectPDF from "./pages/tools/ProtectPDF";
+import ContactUs from "./pages/ContactUs";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import AboutUs from "./pages/AboutUs";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +53,9 @@ const App = () => (
           <Route path="/tools/resize-image" element={<ResizeImage />} />
           <Route path="/tools/watermark-pdf" element={<WatermarkPDF />} />
           <Route path="/tools/protect-pdf" element={<ProtectPDF />} />
+          <Route path="/contact" element={<ContactUs />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/about" element={<AboutUs />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

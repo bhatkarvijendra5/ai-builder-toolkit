@@ -1,0 +1,190 @@
+import { useState } from "react";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card } from "@/components/ui/card";
+import { Mail, Phone, MapPin, Send } from "lucide-react";
+import { toast } from "sonner";
+
+const ContactUs = () => {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    // Simulate form submission
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    toast.success("Message sent successfully! We'll get back to you soon.");
+    setFormData({ name: "", email: "", subject: "", message: "" });
+    setIsSubmitting(false);
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  return (
+    <div className="flex min-h-screen flex-col">
+      <Header />
+      <main className="flex-1">
+        <div className="container mx-auto px-4 py-16">
+          <div className="mx-auto max-w-5xl">
+            <div className="mb-12 text-center">
+              <h1 className="mb-4 text-4xl font-bold md:text-5xl">Contact Us</h1>
+              <p className="text-lg text-muted-foreground">
+                Have a question? We'd love to hear from you. Send us a message
+                and we'll respond as soon as possible.
+              </p>
+            </div>
+
+            <div className="grid gap-8 md:grid-cols-3">
+              <div className="md:col-span-2">
+                <Card className="p-6">
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid gap-6 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Name *</Label>
+                        <Input
+                          id="name"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleChange}
+                          placeholder="Your name"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email *</Label>
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          placeholder="your@email.com"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="subject">Subject *</Label>
+                      <Input
+                        id="subject"
+                        name="subject"
+                        value={formData.subject}
+                        onChange={handleChange}
+                        placeholder="What is this about?"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="message">Message *</Label>
+                      <Textarea
+                        id="message"
+                        name="message"
+                        value={formData.message}
+                        onChange={handleChange}
+                        placeholder="Tell us more..."
+                        className="min-h-[150px]"
+                        required
+                      />
+                    </div>
+
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        "Sending..."
+                      ) : (
+                        <>
+                          <Send className="mr-2 h-4 w-4" />
+                          Send Message
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                </Card>
+              </div>
+
+              <div className="space-y-6">
+                <Card className="p-6">
+                  <h3 className="mb-4 font-semibold">Contact Information</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-start space-x-3">
+                      <Mail className="mt-1 h-5 w-5 text-primary" />
+                      <div>
+                        <p className="text-sm font-medium">Email</p>
+                        <a
+                          href="mailto:support@toolhub.com"
+                          className="text-sm text-muted-foreground hover:text-primary"
+                        >
+                          support@toolhub.com
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start space-x-3">
+                      <Phone className="mt-1 h-5 w-5 text-primary" />
+                      <div>
+                        <p className="text-sm font-medium">Phone</p>
+                        <a
+                          href="tel:+1234567890"
+                          className="text-sm text-muted-foreground hover:text-primary"
+                        >
+                          +1 (234) 567-890
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start space-x-3">
+                      <MapPin className="mt-1 h-5 w-5 text-primary" />
+                      <div>
+                        <p className="text-sm font-medium">Address</p>
+                        <p className="text-sm text-muted-foreground">
+                          123 Tech Street
+                          <br />
+                          San Francisco, CA 94105
+                          <br />
+                          United States
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-6">
+                  <h3 className="mb-2 font-semibold">Business Hours</h3>
+                  <div className="space-y-1 text-sm text-muted-foreground">
+                    <p>Monday - Friday: 9:00 AM - 6:00 PM</p>
+                    <p>Saturday: 10:00 AM - 4:00 PM</p>
+                    <p>Sunday: Closed</p>
+                  </div>
+                </Card>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+};
+
+export default ContactUs;
