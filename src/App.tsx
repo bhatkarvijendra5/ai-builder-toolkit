@@ -21,6 +21,7 @@ import OrganizePDF from "./pages/tools/OrganizePDF";
 import AddPageNumbers from "./pages/tools/AddPageNumbers";
 import ResizeImage from "./pages/tools/ResizeImage";
 import WatermarkPDF from "./pages/tools/WatermarkPDF";
+import ProtectPDF from "./pages/tools/ProtectPDF";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ const App = () => (
           <Route path="/tools/page-numbers" element={<AddPageNumbers />} />
           <Route path="/tools/resize-image" element={<ResizeImage />} />
           <Route path="/tools/watermark-pdf" element={<WatermarkPDF />} />
+          <Route path="/tools/protect-pdf" element={<ProtectPDF />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
