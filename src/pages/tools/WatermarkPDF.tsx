@@ -350,6 +350,84 @@ const WatermarkPDF = () => {
               </div>
             </Card>
 
+            {pages.length > 0 && (
+              <Card className="p-6 space-y-4">
+                <Label className="text-lg font-semibold">Preview</Label>
+                <p className="text-sm text-muted-foreground">
+                  See how the watermark will appear on sample pages
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[0, Math.floor(pages.length / 2), pages.length - 1]
+                    .filter((idx, i, arr) => arr.indexOf(idx) === i)
+                    .map((pageIndex) => {
+                      const page = pages[pageIndex];
+                      const getPositionStyles = () => {
+                        const baseStyle: React.CSSProperties = {
+                          position: 'absolute',
+                          transform: `rotate(${rotation}deg)`,
+                          opacity: opacity,
+                        };
+
+                        switch (position) {
+                          case 'center':
+                            return { ...baseStyle, top: '50%', left: '50%', transform: `translate(-50%, -50%) rotate(${rotation}deg)` };
+                          case 'top-left':
+                            return { ...baseStyle, top: '10%', left: '10%' };
+                          case 'top-right':
+                            return { ...baseStyle, top: '10%', right: '10%' };
+                          case 'bottom-left':
+                            return { ...baseStyle, bottom: '10%', left: '10%' };
+                          case 'bottom-right':
+                            return { ...baseStyle, bottom: '10%', right: '10%' };
+                          default:
+                            return baseStyle;
+                        }
+                      };
+
+                      return (
+                        <div key={pageIndex} className="space-y-2">
+                          <div className="relative border-2 border-border rounded-lg overflow-hidden">
+                            <img
+                              src={page.thumbnail}
+                              alt={`Preview page ${page.pageNumber}`}
+                              className="w-full"
+                            />
+                            <div style={getPositionStyles()}>
+                              {watermarkType === 'text' && watermarkText && (
+                                <div
+                                  style={{
+                                    fontSize: `${fontSize * 0.5}px`,
+                                    color: 'rgba(128, 128, 128, 1)',
+                                    fontWeight: 'bold',
+                                    whiteSpace: 'nowrap',
+                                    textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
+                                  }}
+                                >
+                                  {watermarkText}
+                                </div>
+                              )}
+                              {watermarkType === 'image' && watermarkImagePreview && (
+                                <img
+                                  src={watermarkImagePreview}
+                                  alt="Watermark preview"
+                                  style={{
+                                    maxWidth: `${watermarkSize * 0.5}px`,
+                                    maxHeight: `${watermarkSize * 0.5}px`,
+                                  }}
+                                />
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-xs text-center text-muted-foreground">
+                            Page {page.pageNumber}
+                          </p>
+                        </div>
+                      );
+                    })}
+                </div>
+              </Card>
+            )}
+
             <Card className="p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <Label>Select Pages to Watermark</Label>
