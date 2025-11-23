@@ -3,7 +3,7 @@ import ToolPage from "@/components/ToolPage";
 import FileUploader from "@/components/FileUploader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Download, Loader2, Pen, Upload, Camera, Trash2, RotateCw, Save } from "lucide-react";
+import { Download, Loader2, Pen, Upload, Camera, Trash2, RotateCw, Save, GripVertical } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { PDFDocument, degrees } from "pdf-lib";
 import * as pdfjsLib from "pdfjs-dist";
@@ -47,6 +47,8 @@ const SignPDF = () => {
   const [selectedSignature, setSelectedSignature] = useState<string | null>(null);
   const [draggingSignature, setDraggingSignature] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [resizingSignature, setResizingSignature] = useState<{ id: string; handle: string } | null>(null);
+  const [resizeStartData, setResizeStartData] = useState<{ x: number; y: number; width: number; height: number; mouseX: number; mouseY: number } | null>(null);
   const [isRemovingBg, setIsRemovingBg] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -380,9 +382,10 @@ const SignPDF = () => {
     );
   };
 
-  // Drag handlers for signatures
-  const handleSignatureMouseDown = (e: React.MouseEvent, sig: PlacedSignature) => {
+  // Move handler for signatures
+  const handleMoveMouseDown = (e: React.MouseEvent, sig: PlacedSignature) => {
     e.preventDefault();
+    e.stopPropagation();
     const container = pageContainerRef.current?.parentElement;
     if (!container) return;
 
@@ -394,25 +397,88 @@ const SignPDF = () => {
     setDragOffset({ x: offsetX, y: offsetY });
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!draggingSignature) return;
-
+  // Resize handler for signatures
+  const handleResizeMouseDown = (e: React.MouseEvent, sig: PlacedSignature, handle: string) => {
+    e.preventDefault();
+    e.stopPropagation();
     const container = pageContainerRef.current?.parentElement;
     if (!container) return;
 
     const rect = container.getBoundingClientRect();
-    const newX = (e.clientX - rect.left - dragOffset.x) / zoom;
-    const newY = (e.clientY - rect.top - dragOffset.y) / zoom;
+    setResizingSignature({ id: sig.id, handle });
+    setResizeStartData({
+      x: sig.x,
+      y: sig.y,
+      width: sig.width,
+      height: sig.height,
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+    });
+  };
 
-    setPlacedSignatures(
-      placedSignatures.map((sig) =>
-        sig.id === draggingSignature ? { ...sig, x: Math.max(0, newX), y: Math.max(0, newY) } : sig
-      )
-    );
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (draggingSignature) {
+      const container = pageContainerRef.current?.parentElement;
+      if (!container) return;
+
+      const rect = container.getBoundingClientRect();
+      const newX = (e.clientX - rect.left - dragOffset.x) / zoom;
+      const newY = (e.clientY - rect.top - dragOffset.y) / zoom;
+
+      setPlacedSignatures(
+        placedSignatures.map((sig) =>
+          sig.id === draggingSignature ? { ...sig, x: Math.max(0, newX), y: Math.max(0, newY) } : sig
+        )
+      );
+    } else if (resizingSignature && resizeStartData) {
+      const deltaX = (e.clientX - resizeStartData.mouseX) / zoom;
+      const deltaY = (e.clientY - resizeStartData.mouseY) / zoom;
+
+      setPlacedSignatures(
+        placedSignatures.map((sig) => {
+          if (sig.id !== resizingSignature.id) return sig;
+
+          let newX = resizeStartData.x;
+          let newY = resizeStartData.y;
+          let newWidth = resizeStartData.width;
+          let newHeight = resizeStartData.height;
+
+          const minWidth = 50;
+          const minHeight = 25;
+
+          switch (resizingSignature.handle) {
+            case 'nw':
+              newWidth = Math.max(minWidth, resizeStartData.width - deltaX);
+              newHeight = Math.max(minHeight, resizeStartData.height - deltaY);
+              newX = resizeStartData.x + (resizeStartData.width - newWidth);
+              newY = resizeStartData.y + (resizeStartData.height - newHeight);
+              break;
+            case 'ne':
+              newWidth = Math.max(minWidth, resizeStartData.width + deltaX);
+              newHeight = Math.max(minHeight, resizeStartData.height - deltaY);
+              newY = resizeStartData.y + (resizeStartData.height - newHeight);
+              break;
+            case 'sw':
+              newWidth = Math.max(minWidth, resizeStartData.width - deltaX);
+              newHeight = Math.max(minHeight, resizeStartData.height + deltaY);
+              newX = resizeStartData.x + (resizeStartData.width - newWidth);
+              break;
+            case 'se':
+              newWidth = Math.max(minWidth, resizeStartData.width + deltaX);
+              newHeight = Math.max(minHeight, resizeStartData.height + deltaY);
+              break;
+          }
+
+          return { ...sig, x: Math.max(0, newX), y: Math.max(0, newY), width: newWidth, height: newHeight };
+        })
+      );
+    }
   };
 
   const handleMouseUp = () => {
     setDraggingSignature(null);
+    setResizingSignature(null);
+    setResizeStartData(null);
   };
 
   // Export signed PDF
@@ -662,7 +728,7 @@ const SignPDF = () => {
                       .map((sig) => (
                         <div
                           key={sig.id}
-                          className="absolute cursor-move border-2 border-primary group"
+                          className="absolute border-2 border-primary group"
                           style={{
                             left: sig.x,
                             top: sig.y,
@@ -670,9 +736,34 @@ const SignPDF = () => {
                             height: sig.height,
                             transform: `rotate(${sig.rotation}deg)`,
                           }}
-                          onMouseDown={(e) => handleSignatureMouseDown(e, sig)}
                         >
                           <img src={sig.dataUrl} alt="Signature" className="w-full h-full object-contain pointer-events-none" />
+                          
+                          {/* Move handle at top-center */}
+                          <div 
+                            className="absolute -top-6 left-1/2 -translate-x-1/2 w-8 h-6 bg-primary rounded-t-md flex items-center justify-center cursor-move opacity-0 group-hover:opacity-100 transition-opacity"
+                            onMouseDown={(e) => handleMoveMouseDown(e, sig)}
+                          >
+                            <GripVertical className="h-4 w-4 text-primary-foreground" />
+                          </div>
+                          
+                          {/* Corner resize handles */}
+                          <div 
+                            className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-background border-2 border-primary rounded-full cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity"
+                            onMouseDown={(e) => handleResizeMouseDown(e, sig, 'nw')}
+                          />
+                          <div 
+                            className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-background border-2 border-primary rounded-full cursor-nesw-resize opacity-0 group-hover:opacity-100 transition-opacity"
+                            onMouseDown={(e) => handleResizeMouseDown(e, sig, 'ne')}
+                          />
+                          <div 
+                            className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-background border-2 border-primary rounded-full cursor-nesw-resize opacity-0 group-hover:opacity-100 transition-opacity"
+                            onMouseDown={(e) => handleResizeMouseDown(e, sig, 'sw')}
+                          />
+                          <div 
+                            className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-background border-2 border-primary rounded-full cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity"
+                            onMouseDown={(e) => handleResizeMouseDown(e, sig, 'se')}
+                          />
                           
                           <div className="absolute -top-8 right-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button size="sm" variant="secondary" onClick={() => rotateSignature(sig.id)}>
