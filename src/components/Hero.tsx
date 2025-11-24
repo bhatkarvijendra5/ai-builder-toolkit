@@ -7,7 +7,7 @@ const Hero = () => {
   };
 
   return (
-    <section className="relative overflow-hidden py-8 md:py-12">
+    <section className="relative overflow-hidden pt-8 pb-4 md:pt-12 md:pb-6">
       <div className="container relative z-10 mx-auto px-4">
         <div className="mx-auto max-w-4xl text-center">
           <div className="mb-3 inline-block rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
