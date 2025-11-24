@@ -9,10 +9,22 @@ const Hero = () => {
   return (
     <section className="relative overflow-hidden py-8 md:py-12">
       <div className="container relative z-10 mx-auto px-4">
-        <div className="mx-auto max-w-3xl text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-            Document Tools
+        <div className="mx-auto max-w-4xl text-center">
+          <div className="mb-3 inline-block rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
+            All tools are 100% free
+          </div>
+          
+          <h1 className="mb-3 text-3xl font-bold tracking-tight text-foreground md:text-5xl lg:text-6xl">
+            Work Faster. Convert Smarter. Create Better.
           </h1>
+          
+          <p className="mb-4 text-base text-muted-foreground md:text-lg">
+            Merge, split, compress, convert, and edit your documents with professional-grade tools. Fast, secure, and completely free.
+          </p>
+          
+          <h2 className="text-xl font-semibold text-foreground md:text-2xl">
+            Where PDFs and Images Meet Simplicity.
+          </h2>
         </div>
       </div>
     </section>
