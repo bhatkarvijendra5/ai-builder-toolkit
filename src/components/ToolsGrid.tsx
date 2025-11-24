@@ -185,15 +185,6 @@ const ToolsGrid = () => {
   return (
     <section id="tools" className="py-16 md:py-24">
       <div className="container mx-auto px-4">
-        <div className="mb-12 text-center">
-          <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-            All Tools at Your Fingertips
-          </h2>
-          <p className="text-lg text-muted-foreground">
-            Choose from our comprehensive collection of PDF and image tools
-          </p>
-        </div>
-
         <div className="mb-8 space-y-4">
           <div className="relative mx-auto max-w-md">
             <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
