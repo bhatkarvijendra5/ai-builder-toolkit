@@ -183,7 +183,7 @@ const ToolsGrid = () => {
   });
 
   return (
-    <section id="tools" className="py-16 md:py-24">
+    <section id="tools" className="pt-4 pb-16 md:pt-6 md:pb-24">
       <div className="container mx-auto px-4">
         <div className="mb-8 space-y-4">
           <div className="relative mx-auto max-w-md">
