@@ -18,12 +18,12 @@ const Hero = () => {
             Work Faster. Convert Smarter. Create Better.
           </h1>
           
-          <p className="mb-4 text-base text-muted-foreground md:text-lg">
+          <p className="mb-2 text-base text-muted-foreground md:text-lg">
             Merge, split, compress, convert, and edit your documents with professional-grade tools. Fast, secure, and completely free.
           </p>
           
           <h2 className="text-xl font-semibold text-foreground md:text-2xl">
-            Where PDFs and Images Meet Simplicity.
+            A Smarter Way to Work with Files
           </h2>
         </div>
       </div>
