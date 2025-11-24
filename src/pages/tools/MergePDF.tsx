@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Download, Loader2, GripVertical, X, Trash2, FileStack } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { PDFDocument } from "pdf-lib";
 import * as pdfjsLib from "pdfjs-dist";
 
@@ -231,54 +232,56 @@ const MergePDF = () => {
                 Drag pages to reorder them. Click X to remove individual pages.
               </p>
               
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {pages.map((page) => (
-                  <div
-                    key={page.id}
-                    draggable
-                    onDragStart={() => handlePageDragStart(page.id)}
-                    onDragOver={(e) => handlePageDragOver(e, page.id)}
-                    onDragEnd={handlePageDragEnd}
-                    className={`group relative rounded-lg border-2 transition-all cursor-move ${
-                      draggedPageId === page.id
-                        ? "border-primary bg-primary/5 scale-105 shadow-lg"
-                        : "border-border hover:border-primary/50 hover:shadow-md"
-                    }`}
-                  >
-                    <div className="aspect-[3/4] relative overflow-hidden rounded-t-lg bg-muted">
-                      <img
-                        src={page.thumbnail}
-                        alt={`${page.fileName} - Page ${page.pageNumber}`}
-                        className="w-full h-full object-contain"
-                      />
-                      <div className="absolute top-2 right-2">
-                        <Button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removePage(page.id);
-                          }}
-                          size="icon"
-                          variant="destructive"
-                          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+              <ScrollArea className="h-[600px]">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 pr-4">
+                  {pages.map((page) => (
+                    <div
+                      key={page.id}
+                      draggable
+                      onDragStart={() => handlePageDragStart(page.id)}
+                      onDragOver={(e) => handlePageDragOver(e, page.id)}
+                      onDragEnd={handlePageDragEnd}
+                      className={`group relative rounded-lg border-2 transition-all cursor-move ${
+                        draggedPageId === page.id
+                          ? "border-primary bg-primary/5 scale-105 shadow-lg"
+                          : "border-border hover:border-primary/50 hover:shadow-md"
+                      }`}
+                    >
+                      <div className="aspect-[3/4] relative overflow-hidden rounded-t-lg bg-muted">
+                        <img
+                          src={page.thumbnail}
+                          alt={`${page.fileName} - Page ${page.pageNumber}`}
+                          className="w-full h-full object-contain"
+                        />
+                        <div className="absolute top-2 right-2">
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removePage(page.id);
+                            }}
+                            size="icon"
+                            variant="destructive"
+                            className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="absolute top-2 left-2 flex items-center justify-center h-7 w-7 rounded-full bg-background/90 border border-border">
+                          <GripVertical className="h-4 w-4 text-muted-foreground" />
+                        </div>
                       </div>
-                      <div className="absolute top-2 left-2 flex items-center justify-center h-7 w-7 rounded-full bg-background/90 border border-border">
-                        <GripVertical className="h-4 w-4 text-muted-foreground" />
+                      <div className="p-2 space-y-1">
+                        <p className="text-xs font-medium truncate" title={page.fileName}>
+                          {page.fileName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Page {page.pageNumber} of {page.totalPages}
+                        </p>
                       </div>
                     </div>
-                    <div className="p-2 space-y-1">
-                      <p className="text-xs font-medium truncate" title={page.fileName}>
-                        {page.fileName}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Page {page.pageNumber} of {page.totalPages}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </ScrollArea>
             </Card>
 
             <Card className="p-6">
