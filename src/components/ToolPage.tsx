@@ -7,15 +7,21 @@ import { Link, useLocation } from "react-router-dom";
 import SEO from "./SEO";
 import StructuredData from "./StructuredData";
 
+interface HowToStep {
+  name: string;
+  text: string;
+}
+
 interface ToolPageProps {
   title: string;
   description: string;
   children: ReactNode;
   keywords?: string;
   canonicalUrl?: string;
+  howToSteps?: HowToStep[];
 }
 
-const ToolPage = ({ title, description, children, keywords, canonicalUrl }: ToolPageProps) => {
+const ToolPage = ({ title, description, children, keywords, canonicalUrl, howToSteps }: ToolPageProps) => {
   const location = useLocation();
   const toolPath = location.pathname;
   
@@ -42,6 +48,14 @@ const ToolPage = ({ title, description, children, keywords, canonicalUrl }: Tool
         toolName={title}
         toolDescription={description}
       />
+      {howToSteps && (
+        <StructuredData 
+          type="howto"
+          toolName={title}
+          toolDescription={description}
+          howToSteps={howToSteps}
+        />
+      )}
       <Header />
       <main className="flex-1">
         <div className="container mx-auto px-4 py-8">
