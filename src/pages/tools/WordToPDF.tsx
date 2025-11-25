@@ -113,12 +113,28 @@ const WordToPDF = () => {
     }
   };
 
+  const howToSteps = [
+    {
+      name: "Upload Document",
+      text: "Click or drag and drop your Word document (DOC, DOCX) or text file (TXT) into the upload area."
+    },
+    {
+      name: "Convert to PDF",
+      text: "Click the 'Convert to PDF' button to process your document and convert it to PDF format."
+    },
+    {
+      name: "Download PDF",
+      text: "Once conversion is complete, your PDF file will automatically download to your device."
+    }
+  ];
+
   return (
     <ToolPage
       title="Word to PDF"
       description="Convert text documents to PDF format"
       keywords="Word to PDF, DOCX to PDF, DOC to PDF, convert Word, document converter"
       canonicalUrl="https://toolhub.com/tools/word-to-pdf"
+      howToSteps={howToSteps}
     >
       <div className="space-y-6">
         <FileUploader

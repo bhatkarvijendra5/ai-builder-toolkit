@@ -213,10 +213,32 @@ const AddPageNumbers = () => {
     }
   };
 
+  const howToSteps = [
+    {
+      name: "Upload PDF",
+      text: "Upload the PDF file you want to add page numbers to."
+    },
+    {
+      name: "Customize Page Numbers",
+      text: "Choose page number position (top/bottom, left/center/right), font style, and font size to match your document."
+    },
+    {
+      name: "Preview and Adjust",
+      text: "Review the page number placement on sample pages and adjust settings if needed."
+    },
+    {
+      name: "Download PDF",
+      text: "Click 'Download PDF with Page Numbers' to process and download your numbered PDF document."
+    }
+  ];
+
   return (
     <ToolPage
       title="Add Page Numbers"
       description="Upload a PDF and add page numbers with customizable position and style"
+      keywords="add page numbers to pdf, pdf page numbering, number pdf pages"
+      canonicalUrl="https://toolhub.com/tools/add-page-numbers"
+      howToSteps={howToSteps}
     >
       <div className="space-y-6">
         <FileUploader

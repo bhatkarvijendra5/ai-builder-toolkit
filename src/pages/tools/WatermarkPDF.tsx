@@ -229,10 +229,36 @@ const WatermarkPDF = () => {
     }
   };
 
+  const howToSteps = [
+    {
+      name: "Upload PDF",
+      text: "Upload the PDF file you want to add a watermark to using the file uploader."
+    },
+    {
+      name: "Choose Watermark Type",
+      text: "Select between text watermark or image watermark. Customize text content, font size, or upload your watermark image."
+    },
+    {
+      name: "Customize Settings",
+      text: "Adjust watermark opacity, rotation angle, and position (center, corners) to fit your needs."
+    },
+    {
+      name: "Select Pages",
+      text: "Choose which pages to apply the watermark to - select all pages or specific pages only."
+    },
+    {
+      name: "Apply and Download",
+      text: "Click 'Apply Watermark & Download' to process your PDF and download the watermarked file."
+    }
+  ];
+
   return (
     <ToolPage
       title="Watermark PDF"
       description="Add text or image watermarks to your PDF documents"
+      keywords="watermark pdf, add watermark to pdf, pdf watermark, protect pdf with watermark"
+      canonicalUrl="https://toolhub.com/tools/watermark-pdf"
+      howToSteps={howToSteps}
     >
       <div className="space-y-6">
         <FileUploader

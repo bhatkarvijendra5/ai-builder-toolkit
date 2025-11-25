@@ -233,10 +233,32 @@ const OrganizePDF = () => {
     }
   };
 
+  const howToSteps = [
+    {
+      name: "Upload PDF",
+      text: "Upload the PDF file you want to organize using the file uploader."
+    },
+    {
+      name: "Reorder Pages",
+      text: "Drag and drop page thumbnails to rearrange the page order as desired."
+    },
+    {
+      name: "Edit Pages",
+      text: "Rotate individual pages 90 degrees, delete unwanted pages, or select specific pages for extraction."
+    },
+    {
+      name: "Download Results",
+      text: "Download the reorganized PDF or extract selected pages into a new PDF file."
+    }
+  ];
+
   return (
     <ToolPage
       title="Organize PDF"
       description="Reorder, rotate, delete, or extract PDF pages"
+      keywords="organize pdf, reorder pdf pages, rotate pdf pages, extract pdf pages"
+      canonicalUrl="https://toolhub.com/tools/organize-pdf"
+      howToSteps={howToSteps}
     >
       <div className="space-y-6">
         <FileUploader
