@@ -188,6 +188,8 @@ const MergePDF = () => {
     <ToolPage
       title="Merge PDF"
       description="Combine and reorder pages from multiple PDFs with drag-and-drop"
+      keywords="merge PDF, combine PDF, PDF merger, join PDFs, merge PDF files online"
+      canonicalUrl="https://toolhub.com/tools/merge-pdf"
     >
       <div className="space-y-6">
         <FileUploader

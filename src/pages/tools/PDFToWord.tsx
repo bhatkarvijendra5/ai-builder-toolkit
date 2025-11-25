@@ -176,6 +176,8 @@ const PDFToWord = () => {
     <ToolPage
       title="PDF to Word"
       description="Convert PDF documents to editable text format"
+      keywords="PDF to Word, PDF to DOCX, convert PDF, PDF converter, PDF to text"
+      canonicalUrl="https://toolhub.com/tools/pdf-to-word"
     >
       <div className="space-y-6">
         <FileUploader

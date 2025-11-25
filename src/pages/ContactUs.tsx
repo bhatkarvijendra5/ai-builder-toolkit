@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,6 +57,12 @@ const ContactUs = () => {
 
   return (
     <div className="flex min-h-screen flex-col">
+      <SEO 
+        title="Contact Us"
+        description="Get in touch with ToolHub. Have questions or feedback about our PDF and image tools? We'd love to hear from you."
+        keywords="contact ToolHub, support, customer service, help, feedback"
+        canonicalUrl="https://toolhub.com/contact"
+      />
       <Header />
       <main className="flex-1">
         <div className="container mx-auto px-4 py-8">

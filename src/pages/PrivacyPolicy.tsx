@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -8,6 +9,12 @@ import { Link } from "react-router-dom";
 const PrivacyPolicy = () => {
   return (
     <div className="flex min-h-screen flex-col">
+      <SEO 
+        title="Privacy Policy"
+        description="Read ToolHub's privacy policy. Learn how we protect your data and ensure your privacy when using our PDF and image tools."
+        keywords="privacy policy, data protection, user privacy, ToolHub privacy"
+        canonicalUrl="https://toolhub.com/privacy"
+      />
       <Header />
       <main className="flex-1">
         <div className="container mx-auto px-4 py-8">

@@ -96,6 +96,8 @@ const CompressPDF = () => {
     <ToolPage
       title="Compress PDF"
       description="Reduce PDF file size while maintaining quality"
+      keywords="compress PDF, reduce PDF size, PDF compressor, optimize PDF, shrink PDF"
+      canonicalUrl="https://toolhub.com/tools/compress-pdf"
     >
       <div className="space-y-6">
         <FileUploader

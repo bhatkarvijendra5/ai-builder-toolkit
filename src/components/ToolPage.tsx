@@ -4,16 +4,25 @@ import Footer from "./Footer";
 import { Button } from "./ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+import SEO from "./SEO";
 
 interface ToolPageProps {
   title: string;
   description: string;
   children: ReactNode;
+  keywords?: string;
+  canonicalUrl?: string;
 }
 
-const ToolPage = ({ title, description, children }: ToolPageProps) => {
+const ToolPage = ({ title, description, children, keywords, canonicalUrl }: ToolPageProps) => {
   return (
     <div className="flex min-h-screen flex-col">
+      <SEO 
+        title={title}
+        description={description}
+        keywords={keywords}
+        canonicalUrl={canonicalUrl}
+      />
       <Header />
       <main className="flex-1">
         <div className="container mx-auto px-4 py-8">
