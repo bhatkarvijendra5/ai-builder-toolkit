@@ -3,6 +3,7 @@ import Footer from "@/components/Footer";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import SEO from "@/components/SEO";
+import StructuredData from "@/components/StructuredData";
 import { FileText, Zap, Shield, Globe, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -34,6 +35,11 @@ const AboutUs = () => {
     },
   ];
 
+  const breadcrumbs = [
+    { name: "Home", url: "/" },
+    { name: "About Us", url: "/about" }
+  ];
+
   return (
     <div className="flex min-h-screen flex-col">
       <SEO 
@@ -41,6 +47,10 @@ const AboutUs = () => {
         description="Learn about ToolHub's mission to make document and image management simple and accessible for everyone. Discover our professional PDF and image tools."
         keywords="about ToolHub, document management, PDF tools, image tools, online tools"
         canonicalUrl="https://toolhub.com/about"
+      />
+      <StructuredData 
+        type="breadcrumb"
+        breadcrumbs={breadcrumbs}
       />
       <Header />
       <main className="flex-1">
