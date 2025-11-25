@@ -3,7 +3,7 @@ import ToolPage from "@/components/ToolPage";
 import FileUploader from "@/components/FileUploader";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Download, Loader2, GripVertical, X, Trash2, FileStack, Upload, Cloud } from "lucide-react";
+import { Download, Loader2, GripVertical, X, Trash2, FileStack, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { PDFDocument } from "pdf-lib";
@@ -93,9 +93,6 @@ const MergePDF = () => {
     }
   };
 
-  const handleCloudImport = (provider: 'google' | 'dropbox') => {
-    toast.info(`${provider === 'google' ? 'Google Drive' : 'Dropbox'} integration coming soon!`);
-  };
 
   const handlePdfDragStart = (pdfId: string) => {
     setDraggedPdfId(pdfId);
@@ -221,33 +218,6 @@ const MergePDF = () => {
               onFilesSelected={handleFilesSelected}
               acceptedFileTypes={`PDF files (${pdfs.length}/15)`}
             />
-            
-            <div className="flex items-center gap-2">
-              <div className="flex-1 border-t border-border" />
-              <span className="text-xs text-muted-foreground">or import from</span>
-              <div className="flex-1 border-t border-border" />
-            </div>
-            
-            <div className="flex gap-2">
-              <Button
-                onClick={() => handleCloudImport('google')}
-                variant="outline"
-                className="flex-1 gap-2"
-                disabled={pdfs.length >= 15}
-              >
-                <Cloud className="h-4 w-4" />
-                Google Drive
-              </Button>
-              <Button
-                onClick={() => handleCloudImport('dropbox')}
-                variant="outline"
-                className="flex-1 gap-2"
-                disabled={pdfs.length >= 15}
-              >
-                <Cloud className="h-4 w-4" />
-                Dropbox
-              </Button>
-            </div>
           </div>
         </Card>
 
