@@ -51,16 +51,16 @@ const Header = () => {
           <Link to="/" className="transition-colors hover:text-primary">
             Home
           </Link>
-          <Link to="/merge-pdf" className="transition-colors hover:text-primary">
+          <Link to="/tools/merge-pdf" className="transition-colors hover:text-primary">
             Merge PDF
           </Link>
-          <Link to="/pdf-to-word" className="transition-colors hover:text-primary">
+          <Link to="/tools/pdf-to-word" className="transition-colors hover:text-primary">
             PDF to Word
           </Link>
-          <Link to="/jpg-to-pdf" className="transition-colors hover:text-primary">
+          <Link to="/tools/jpg-to-pdf" className="transition-colors hover:text-primary">
             JPG to PDF
           </Link>
-          <Link to="/pdf-to-excel" className="transition-colors hover:text-primary">
+          <Link to="/tools/pdf-to-excel" className="transition-colors hover:text-primary">
             PDF to Excel
           </Link>
         </nav>
