@@ -3,6 +3,8 @@ import ToolPage from "@/components/ToolPage";
 import FileUploader from "@/components/FileUploader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Download, FileImage, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import * as pdfjsLib from "pdfjs-dist";
@@ -20,6 +22,8 @@ const SplitPDF = () => {
   const [pages, setPages] = useState<PagePreview[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
+  const [fromPage, setFromPage] = useState("");
+  const [toPage, setToPage] = useState("");
 
   const handleFileSelected = async (files: File[]) => {
     if (files.length === 0) {
@@ -109,6 +113,59 @@ const SplitPDF = () => {
 
   const deselectAllPages = () => {
     setPages((prev) => prev.map((page) => ({ ...page, selected: false })));
+  };
+
+  const selectPageRange = () => {
+    const from = parseInt(fromPage);
+    const to = parseInt(toPage);
+
+    if (!fromPage || !toPage) {
+      toast({
+        title: "Invalid Range",
+        description: "Please enter both 'From Page' and 'To Page' values.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isNaN(from) || isNaN(to)) {
+      toast({
+        title: "Invalid Range",
+        description: "Please enter valid page numbers.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (from < 1 || to < 1 || from > pages.length || to > pages.length) {
+      toast({
+        title: "Invalid Range",
+        description: `Page numbers must be between 1 and ${pages.length}.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (from > to) {
+      toast({
+        title: "Invalid Range",
+        description: "'From Page' must be less than or equal to 'To Page'.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setPages((prev) =>
+      prev.map((page) => ({
+        ...page,
+        selected: page.pageNumber >= from && page.pageNumber <= to,
+      }))
+    );
+
+    toast({
+      title: "Range Selected",
+      description: `Selected pages ${from} to ${to}.`,
+    });
   };
 
   const downloadAsJPEG = async () => {
@@ -260,7 +317,7 @@ const SplitPDF = () => {
         {!isProcessing && pages.length > 0 && (
           <>
             <Card className="p-6">
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-6 space-y-4">
                 <div className="space-y-1">
                   <h3 className="text-lg font-semibold">
                     Select Pages to Extract
@@ -270,7 +327,42 @@ const SplitPDF = () => {
                     {pages.length > 1 ? "s" : ""} selected
                   </p>
                 </div>
-                <div className="flex gap-2">
+
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor="fromPage">From Page</Label>
+                    <Input
+                      id="fromPage"
+                      type="number"
+                      min="1"
+                      max={pages.length}
+                      placeholder="1"
+                      value={fromPage}
+                      onChange={(e) => setFromPage(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor="toPage">To Page</Label>
+                    <Input
+                      id="toPage"
+                      type="number"
+                      min="1"
+                      max={pages.length}
+                      placeholder={pages.length.toString()}
+                      value={toPage}
+                      onChange={(e) => setToPage(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={selectPageRange}
+                    className="w-full sm:w-auto"
+                  >
+                    Select Range
+                  </Button>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
                   <Button
                     variant="outline"
                     size="sm"
