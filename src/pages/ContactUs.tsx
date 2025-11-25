@@ -2,6 +2,7 @@ import { useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
+import StructuredData from "@/components/StructuredData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,6 +56,11 @@ const ContactUs = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const breadcrumbs = [
+    { name: "Home", url: "/" },
+    { name: "Contact Us", url: "/contact" }
+  ];
+
   return (
     <div className="flex min-h-screen flex-col">
       <SEO 
@@ -62,6 +68,10 @@ const ContactUs = () => {
         description="Get in touch with ToolHub. Have questions or feedback about our PDF and image tools? We'd love to hear from you."
         keywords="contact ToolHub, support, customer service, help, feedback"
         canonicalUrl="https://toolhub.com/contact"
+      />
+      <StructuredData 
+        type="breadcrumb"
+        breadcrumbs={breadcrumbs}
       />
       <Header />
       <main className="flex-1">

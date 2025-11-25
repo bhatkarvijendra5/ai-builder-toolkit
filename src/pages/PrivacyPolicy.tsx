@@ -1,12 +1,18 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
+import StructuredData from "@/components/StructuredData";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const PrivacyPolicy = () => {
+  const breadcrumbs = [
+    { name: "Home", url: "/" },
+    { name: "Privacy Policy", url: "/privacy" }
+  ];
+
   return (
     <div className="flex min-h-screen flex-col">
       <SEO 
@@ -14,6 +20,10 @@ const PrivacyPolicy = () => {
         description="Read ToolHub's privacy policy. Learn how we protect your data and ensure your privacy when using our PDF and image tools."
         keywords="privacy policy, data protection, user privacy, ToolHub privacy"
         canonicalUrl="https://toolhub.com/privacy"
+      />
+      <StructuredData 
+        type="breadcrumb"
+        breadcrumbs={breadcrumbs}
       />
       <Header />
       <main className="flex-1">

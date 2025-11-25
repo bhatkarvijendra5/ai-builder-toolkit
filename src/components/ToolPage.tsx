@@ -3,8 +3,9 @@ import Header from "./Header";
 import Footer from "./Footer";
 import { Button } from "./ui/button";
 import { ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import SEO from "./SEO";
+import StructuredData from "./StructuredData";
 
 interface ToolPageProps {
   title: string;
@@ -15,6 +16,15 @@ interface ToolPageProps {
 }
 
 const ToolPage = ({ title, description, children, keywords, canonicalUrl }: ToolPageProps) => {
+  const location = useLocation();
+  const toolPath = location.pathname;
+  
+  const breadcrumbs = [
+    { name: "Home", url: "/" },
+    { name: "Tools", url: "/#tools" },
+    { name: title, url: toolPath }
+  ];
+
   return (
     <div className="flex min-h-screen flex-col">
       <SEO 
@@ -22,6 +32,15 @@ const ToolPage = ({ title, description, children, keywords, canonicalUrl }: Tool
         description={description}
         keywords={keywords}
         canonicalUrl={canonicalUrl}
+      />
+      <StructuredData 
+        type="breadcrumb"
+        breadcrumbs={breadcrumbs}
+      />
+      <StructuredData 
+        type="tool"
+        toolName={title}
+        toolDescription={description}
       />
       <Header />
       <main className="flex-1">
