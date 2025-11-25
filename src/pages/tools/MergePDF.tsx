@@ -3,90 +3,88 @@ import ToolPage from "@/components/ToolPage";
 import FileUploader from "@/components/FileUploader";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Download, Loader2, GripVertical, X, Trash2, FileStack } from "lucide-react";
+import { Download, Loader2, GripVertical, X, Trash2, FileStack, Upload, Cloud } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { PDFDocument } from "pdf-lib";
 import * as pdfjsLib from "pdfjs-dist";
 
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
 
-interface PageData {
+interface PDFData {
   id: string;
   fileIndex: number;
   fileName: string;
-  pageNumber: number;
   thumbnail: string;
   totalPages: number;
+  file: File;
 }
 
 const MergePDF = () => {
-  const [files, setFiles] = useState<File[]>([]);
-  const [pages, setPages] = useState<PageData[]>([]);
+  const [pdfs, setPdfs] = useState<PDFData[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingPages, setIsLoadingPages] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [draggedPageId, setDraggedPageId] = useState<string | null>(null);
+  const [draggedPdfId, setDraggedPdfId] = useState<string | null>(null);
 
   const handleFilesSelected = async (selectedFiles: File[]) => {
-    setFiles(selectedFiles);
+    if (pdfs.length + selectedFiles.length > 15) {
+      toast.error("Maximum 15 PDFs allowed");
+      return;
+    }
     if (selectedFiles.length > 0) {
-      await extractAllPages(selectedFiles);
-    } else {
-      setPages([]);
+      await extractFirstPages(selectedFiles);
     }
   };
 
-  const extractAllPages = async (selectedFiles: File[]) => {
+  const extractFirstPages = async (selectedFiles: File[]) => {
     setIsLoadingPages(true);
-    const allPages: PageData[] = [];
+    const newPdfs: PDFData[] = [];
 
     try {
-      for (let fileIndex = 0; fileIndex < selectedFiles.length; fileIndex++) {
-        const file = selectedFiles[fileIndex];
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ 
           data: arrayBuffer,
           useSystemFonts: true 
         }).promise;
 
-        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-          const page = await pdf.getPage(pageNum);
-          const viewport = page.getViewport({ scale: 0.8 });
-          const canvas = document.createElement("canvas");
-          const context = canvas.getContext("2d", { alpha: false });
+        // Only extract first page
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({ scale: 0.8 });
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d", { alpha: false });
 
-          if (!context) continue;
+        if (!context) continue;
 
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          
-          context.fillStyle = "white";
-          context.fillRect(0, 0, canvas.width, canvas.height);
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        
+        context.fillStyle = "white";
+        context.fillRect(0, 0, canvas.width, canvas.height);
 
-          await page.render({
-            canvasContext: context,
-            viewport: viewport,
-            canvas: canvas,
-          } as any).promise;
+        await page.render({
+          canvasContext: context,
+          viewport: viewport,
+          canvas: canvas,
+        } as any).promise;
 
-          const thumbnail = canvas.toDataURL("image/jpeg", 0.8);
-          
-          allPages.push({
-            id: `${fileIndex}-${pageNum}-${Date.now()}-${Math.random()}`,
-            fileIndex,
-            fileName: file.name,
-            pageNumber: pageNum,
-            thumbnail,
-            totalPages: pdf.numPages,
-          });
-        }
+        const thumbnail = canvas.toDataURL("image/jpeg", 0.8);
+        
+        newPdfs.push({
+          id: `${pdfs.length + i}-${Date.now()}-${Math.random()}`,
+          fileIndex: pdfs.length + i,
+          fileName: file.name,
+          thumbnail,
+          totalPages: pdf.numPages,
+          file,
+        });
       }
 
-      setPages(allPages);
-      toast.success(`Loaded ${allPages.length} pages from ${selectedFiles.length} PDF(s)`);
+      setPdfs([...pdfs, ...newPdfs]);
+      toast.success(`Added ${newPdfs.length} PDF(s)`);
     } catch (error) {
       console.error("Error extracting pages:", error);
       toast.error("Failed to extract pages from PDFs");
@@ -95,44 +93,47 @@ const MergePDF = () => {
     }
   };
 
-  const handlePageDragStart = (pageId: string) => {
-    setDraggedPageId(pageId);
+  const handleCloudImport = (provider: 'google' | 'dropbox') => {
+    toast.info(`${provider === 'google' ? 'Google Drive' : 'Dropbox'} integration coming soon!`);
   };
 
-  const handlePageDragOver = (e: React.DragEvent, targetPageId: string) => {
-    e.preventDefault();
-    if (!draggedPageId || draggedPageId === targetPageId) return;
+  const handlePdfDragStart = (pdfId: string) => {
+    setDraggedPdfId(pdfId);
+  };
 
-    const draggedIndex = pages.findIndex(p => p.id === draggedPageId);
-    const targetIndex = pages.findIndex(p => p.id === targetPageId);
+  const handlePdfDragOver = (e: React.DragEvent, targetPdfId: string) => {
+    e.preventDefault();
+    if (!draggedPdfId || draggedPdfId === targetPdfId) return;
+
+    const draggedIndex = pdfs.findIndex(p => p.id === draggedPdfId);
+    const targetIndex = pdfs.findIndex(p => p.id === targetPdfId);
 
     if (draggedIndex === -1 || targetIndex === -1) return;
 
-    const newPages = [...pages];
-    const [draggedPage] = newPages.splice(draggedIndex, 1);
-    newPages.splice(targetIndex, 0, draggedPage);
+    const newPdfs = [...pdfs];
+    const [draggedPdf] = newPdfs.splice(draggedIndex, 1);
+    newPdfs.splice(targetIndex, 0, draggedPdf);
 
-    setPages(newPages);
+    setPdfs(newPdfs);
   };
 
-  const handlePageDragEnd = () => {
-    setDraggedPageId(null);
+  const handlePdfDragEnd = () => {
+    setDraggedPdfId(null);
   };
 
-  const removePage = (pageId: string) => {
-    setPages(pages.filter(p => p.id !== pageId));
-    toast.success("Page removed");
+  const removePdf = (pdfId: string) => {
+    setPdfs(pdfs.filter(p => p.id !== pdfId));
+    toast.success("PDF removed");
   };
 
-  const clearAllPages = () => {
-    setPages([]);
-    setFiles([]);
-    toast.success("All pages cleared");
+  const clearAllPdfs = () => {
+    setPdfs([]);
+    toast.success("All PDFs cleared");
   };
 
   const handleMerge = async () => {
-    if (pages.length === 0) {
-      toast.error("Please add PDF files and pages to merge");
+    if (pdfs.length === 0) {
+      toast.error("Please add PDF files to merge");
       return;
     }
 
@@ -142,20 +143,20 @@ const MergePDF = () => {
     try {
       const mergedPdf = await PDFDocument.create();
       
-      let processedPages = 0;
+      let processedPdfs = 0;
       
-      // Process pages in the order they appear in the pages array
-      for (const page of pages) {
-        const file = files[page.fileIndex];
-        const arrayBuffer = await file.arrayBuffer();
+      // Process PDFs in the order they appear in the pdfs array
+      for (const pdfData of pdfs) {
+        const arrayBuffer = await pdfData.file.arrayBuffer();
         const sourcePdf = await PDFDocument.load(arrayBuffer);
         
-        // Copy the specific page (pageNumber is 1-indexed, but copyPages uses 0-indexed)
-        const [copiedPage] = await mergedPdf.copyPages(sourcePdf, [page.pageNumber - 1]);
-        mergedPdf.addPage(copiedPage);
+        // Copy all pages from each PDF
+        const pageIndices = Array.from({ length: sourcePdf.getPageCount() }, (_, i) => i);
+        const copiedPages = await mergedPdf.copyPages(sourcePdf, pageIndices);
+        copiedPages.forEach(page => mergedPdf.addPage(page));
         
-        processedPages++;
-        setProgress(Math.round((processedPages / pages.length) * 90));
+        processedPdfs++;
+        setProgress(Math.round((processedPdfs / pdfs.length) * 90));
       }
       
       setProgress(95);
@@ -175,7 +176,7 @@ const MergePDF = () => {
       URL.revokeObjectURL(url);
       
       setIsProcessing(false);
-      toast.success(`${pages.length} pages merged successfully!`);
+      toast.success(`${pdfs.length} PDFs merged successfully!`);
     } catch (error) {
       console.error("Error merging PDFs:", error);
       setIsProcessing(false);
@@ -187,19 +188,19 @@ const MergePDF = () => {
   const howToSteps = [
     {
       name: "Upload PDF Files",
-      text: "Click or drag and drop up to 20 PDF files into the upload area. The tool will automatically extract all pages and generate thumbnails for preview."
+      text: "Upload up to 15 PDFs by clicking or dragging files, or import from Google Drive or Dropbox. Only the first page thumbnail will be shown for preview."
     },
     {
-      name: "Reorder Pages",
-      text: "Drag and drop page thumbnails to arrange them in your desired order. You can combine pages from different PDFs in any sequence you want."
+      name: "Reorder PDFs",
+      text: "Drag and drop PDF thumbnails horizontally to arrange them in your desired merge order. The entire PDF will be merged in that sequence."
     },
     {
-      name: "Remove Unwanted Pages",
-      text: "Hover over any page thumbnail and click the X button to remove it. You can also click 'Clear All' to start over."
+      name: "Remove Unwanted PDFs",
+      text: "Hover over any PDF thumbnail and click the X button to remove it. You can also click 'Clear All' to start over."
     },
     {
       name: "Merge and Download",
-      text: "Click the 'Merge Pages into PDF' button. The tool will combine all pages in your chosen order and automatically download the merged PDF file."
+      text: "Click the 'Merge PDFs' button. All PDFs will be combined in your chosen order and automatically downloaded as a single merged file."
     }
   ];
 
@@ -212,12 +213,43 @@ const MergePDF = () => {
       howToSteps={howToSteps}
     >
       <div className="space-y-6">
-        <FileUploader
-          accept={{ "application/pdf": [".pdf"] }}
-          maxFiles={20}
-          onFilesSelected={handleFilesSelected}
-          acceptedFileTypes="PDF files (up to 20)"
-        />
+        <Card className="p-6">
+          <div className="space-y-4">
+            <FileUploader
+              accept={{ "application/pdf": [".pdf"] }}
+              maxFiles={15 - pdfs.length}
+              onFilesSelected={handleFilesSelected}
+              acceptedFileTypes={`PDF files (${pdfs.length}/15)`}
+            />
+            
+            <div className="flex items-center gap-2">
+              <div className="flex-1 border-t border-border" />
+              <span className="text-xs text-muted-foreground">or import from</span>
+              <div className="flex-1 border-t border-border" />
+            </div>
+            
+            <div className="flex gap-2">
+              <Button
+                onClick={() => handleCloudImport('google')}
+                variant="outline"
+                className="flex-1 gap-2"
+                disabled={pdfs.length >= 15}
+              >
+                <Cloud className="h-4 w-4" />
+                Google Drive
+              </Button>
+              <Button
+                onClick={() => handleCloudImport('dropbox')}
+                variant="outline"
+                className="flex-1 gap-2"
+                disabled={pdfs.length >= 15}
+              >
+                <Cloud className="h-4 w-4" />
+                Dropbox
+              </Button>
+            </div>
+          </div>
+        </Card>
 
         {isLoadingPages && (
           <Card className="p-6">
@@ -230,18 +262,18 @@ const MergePDF = () => {
           </Card>
         )}
 
-        {pages.length > 0 && !isLoadingPages && (
+        {pdfs.length > 0 && !isLoadingPages && (
           <div className="space-y-6">
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <FileStack className="h-5 w-5 text-primary" />
                   <h3 className="text-lg font-semibold">
-                    Pages ({pages.length})
+                    PDFs ({pdfs.length}/15)
                   </h3>
                 </div>
                 <Button
-                  onClick={clearAllPages}
+                  onClick={clearAllPdfs}
                   variant="outline"
                   size="sm"
                   className="gap-2"
@@ -250,36 +282,45 @@ const MergePDF = () => {
                   Clear All
                 </Button>
               </div>
-              <p className="text-sm text-muted-foreground mb-6">
-                Drag pages to reorder them. Click X to remove individual pages.
+              <p className="text-sm text-muted-foreground mb-4">
+                Drag PDFs to reorder them. All pages from each PDF will be merged in this order.
               </p>
               
-              <ScrollArea className="h-[600px]">
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 pr-4">
-                  {pages.map((page) => (
+              {pdfs.length < 15 && (
+                <div className="mb-4 p-3 bg-muted/50 rounded-lg border border-border flex items-center gap-2">
+                  <Upload className="h-4 w-4 text-primary" />
+                  <p className="text-sm text-muted-foreground">
+                    You can upload {15 - pdfs.length} more PDF{15 - pdfs.length !== 1 ? 's' : ''} (max 15 total)
+                  </p>
+                </div>
+              )}
+              
+              <div className="overflow-x-auto overflow-y-hidden">
+                <div className="flex gap-4 pb-4 min-w-min">
+                  {pdfs.map((pdf) => (
                     <div
-                      key={page.id}
+                      key={pdf.id}
                       draggable
-                      onDragStart={() => handlePageDragStart(page.id)}
-                      onDragOver={(e) => handlePageDragOver(e, page.id)}
-                      onDragEnd={handlePageDragEnd}
-                      className={`group relative rounded-lg border-2 transition-all cursor-move ${
-                        draggedPageId === page.id
+                      onDragStart={() => handlePdfDragStart(pdf.id)}
+                      onDragOver={(e) => handlePdfDragOver(e, pdf.id)}
+                      onDragEnd={handlePdfDragEnd}
+                      className={`group relative flex-shrink-0 w-48 rounded-lg border-2 transition-all cursor-move ${
+                        draggedPdfId === pdf.id
                           ? "border-primary bg-primary/5 scale-105 shadow-lg"
                           : "border-border hover:border-primary/50 hover:shadow-md"
                       }`}
                     >
                       <div className="aspect-[3/4] relative overflow-hidden rounded-t-lg bg-muted">
                         <img
-                          src={page.thumbnail}
-                          alt={`${page.fileName} - Page ${page.pageNumber}`}
+                          src={pdf.thumbnail}
+                          alt={`${pdf.fileName} - First page`}
                           className="w-full h-full object-contain"
                         />
                         <div className="absolute top-2 right-2">
                           <Button
                             onClick={(e) => {
                               e.stopPropagation();
-                              removePage(page.id);
+                              removePdf(pdf.id);
                             }}
                             size="icon"
                             variant="destructive"
@@ -293,35 +334,35 @@ const MergePDF = () => {
                         </div>
                       </div>
                       <div className="p-2 space-y-1">
-                        <p className="text-xs font-medium truncate" title={page.fileName}>
-                          {page.fileName}
+                        <p className="text-xs font-medium truncate" title={pdf.fileName}>
+                          {pdf.fileName}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Page {page.pageNumber} of {page.totalPages}
+                          {pdf.totalPages} page{pdf.totalPages !== 1 ? 's' : ''}
                         </p>
                       </div>
                     </div>
                   ))}
                 </div>
-              </ScrollArea>
+              </div>
             </Card>
 
             <Card className="p-6">
               <Button
                 onClick={handleMerge}
-                disabled={isProcessing || pages.length === 0}
+                disabled={isProcessing || pdfs.length === 0}
                 size="lg"
                 className="w-full gap-2"
               >
                 {isProcessing ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    Merging Pages...
+                    Merging PDFs...
                   </>
                 ) : (
                   <>
                     <Download className="h-5 w-5" />
-                    Merge {pages.length} Page{pages.length !== 1 ? 's' : ''} into PDF
+                    Merge {pdfs.length} PDF{pdfs.length !== 1 ? 's' : ''}
                   </>
                 )}
               </Button>
@@ -331,7 +372,7 @@ const MergePDF = () => {
                   <Progress value={progress} className="h-2" />
                   <p className="text-sm text-center text-muted-foreground">
                     {progress < 90
-                      ? `Processing pages... ${progress}%`
+                      ? `Merging PDFs... ${progress}%`
                       : progress < 95
                       ? "Finalizing PDF..."
                       : "Almost done..."}
@@ -340,14 +381,6 @@ const MergePDF = () => {
               )}
             </Card>
           </div>
-        )}
-
-        {files.length > 0 && pages.length === 0 && !isLoadingPages && (
-          <Card className="p-6 text-center">
-            <p className="text-muted-foreground">
-              No pages extracted. Please try uploading valid PDF files.
-            </p>
-          </Card>
         )}
       </div>
     </ToolPage>
