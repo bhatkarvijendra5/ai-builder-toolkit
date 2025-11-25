@@ -573,8 +573,27 @@ const SignPDF = () => {
     }
   };
 
+  const howToSteps = [
+    {
+      name: "Upload PDF",
+      text: "Select and upload the PDF document you need to sign."
+    },
+    {
+      name: "Create Signature",
+      text: "Draw your signature, upload an image, or capture it with your camera. Background removal is applied automatically."
+    },
+    {
+      name: "Place Signature",
+      text: "Drag and drop your signature onto the PDF pages, resize, rotate, and position it as needed."
+    },
+    {
+      name: "Download Signed PDF",
+      text: "Click 'Download Signed PDF' to save your signed document with all signatures embedded."
+    }
+  ];
+
   return (
-    <ToolPage title="Sign PDF" description="Add your signature to PDF documents">
+    <ToolPage title="Sign PDF" description="Add your signature to PDF documents" keywords="sign pdf, digital signature, esign pdf, sign documents online" canonicalUrl="https://toolhub.com/tools/sign-pdf" howToSteps={howToSteps}>
       <div className="space-y-6">
         <FileUploader
           accept={{ 

@@ -106,10 +106,28 @@ const ProtectPDF = () => {
     }
   };
 
+  const howToSteps = [
+    {
+      name: "Upload PDF",
+      text: "Select and upload the PDF file you want to protect with a password."
+    },
+    {
+      name: "Set Password",
+      text: "Enter a strong password (minimum 4 characters) that will be required to open the PDF file."
+    },
+    {
+      name: "Protect and Download",
+      text: "Click 'Protect & Download' to encrypt your PDF and download the password-protected file."
+    }
+  ];
+
   return (
     <ToolPage
       title="Protect PDF"
       description="Secure your PDF with password protection"
+      keywords="protect pdf, password protect pdf, secure pdf, encrypt pdf"
+      canonicalUrl="https://toolhub.com/tools/protect-pdf"
+      howToSteps={howToSteps}
     >
       <div className="space-y-6">
         <Alert>
