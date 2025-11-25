@@ -295,8 +295,8 @@ const MergePDF = () => {
                 </div>
               )}
               
-              <div className="overflow-x-auto overflow-y-hidden">
-                <div className="flex gap-4 pb-4 min-w-min">
+              <div className="max-h-[600px] overflow-y-auto overflow-x-hidden pr-2">
+                <div className="space-y-3">
                   {pdfs.map((pdf) => (
                     <div
                       key={pdf.id}
@@ -304,42 +304,44 @@ const MergePDF = () => {
                       onDragStart={() => handlePdfDragStart(pdf.id)}
                       onDragOver={(e) => handlePdfDragOver(e, pdf.id)}
                       onDragEnd={handlePdfDragEnd}
-                      className={`group relative flex-shrink-0 w-48 rounded-lg border-2 transition-all cursor-move ${
+                      className={`group relative flex gap-3 p-3 rounded-lg border-2 transition-all cursor-move ${
                         draggedPdfId === pdf.id
-                          ? "border-primary bg-primary/5 scale-105 shadow-lg"
+                          ? "border-primary bg-primary/5 scale-[1.02] shadow-lg"
                           : "border-border hover:border-primary/50 hover:shadow-md"
                       }`}
                     >
-                      <div className="aspect-[3/4] relative overflow-hidden rounded-t-lg bg-muted">
+                      <div className="flex-shrink-0 w-20 h-28 relative overflow-hidden rounded bg-muted">
                         <img
                           src={pdf.thumbnail}
                           alt={`${pdf.fileName} - First page`}
                           className="w-full h-full object-contain"
                         />
-                        <div className="absolute top-2 right-2">
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removePdf(pdf.id);
-                            }}
-                            size="icon"
-                            variant="destructive"
-                            className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <div className="absolute top-2 left-2 flex items-center justify-center h-7 w-7 rounded-full bg-background/90 border border-border">
-                          <GripVertical className="h-4 w-4 text-muted-foreground" />
+                        <div className="absolute top-1 left-1 flex items-center justify-center h-6 w-6 rounded-full bg-background/90 border border-border">
+                          <GripVertical className="h-3 w-3 text-muted-foreground" />
                         </div>
                       </div>
-                      <div className="p-2 space-y-1">
-                        <p className="text-xs font-medium truncate" title={pdf.fileName}>
-                          {pdf.fileName}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {pdf.totalPages} page{pdf.totalPages !== 1 ? 's' : ''}
-                        </p>
+                      <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
+                        <div>
+                          <p className="text-sm font-medium truncate" title={pdf.fileName}>
+                            {pdf.fileName}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {pdf.totalPages} page{pdf.totalPages !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removePdf(pdf.id);
+                          }}
+                          size="icon"
+                          variant="destructive"
+                          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   ))}
