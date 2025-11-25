@@ -92,12 +92,32 @@ const CompressPDF = () => {
     }
   };
 
+  const howToSteps = [
+    {
+      name: "Upload Your PDF",
+      text: "Click or drag and drop your PDF file into the upload area. The tool accepts PDF files of any size."
+    },
+    {
+      name: "Review File Size",
+      text: "Once uploaded, you'll see the original file size displayed. This helps you understand how much compression is possible."
+    },
+    {
+      name: "Compress PDF",
+      text: "Click the 'Compress & Download' button. The tool will optimize the PDF by removing unnecessary metadata and compressing content while maintaining quality."
+    },
+    {
+      name: "Download Result",
+      text: "Your compressed PDF will automatically download. You'll see the new file size and the percentage reduction achieved."
+    }
+  ];
+
   return (
     <ToolPage
       title="Compress PDF"
       description="Reduce PDF file size while maintaining quality"
       keywords="compress PDF, reduce PDF size, PDF compressor, optimize PDF, shrink PDF"
       canonicalUrl="https://toolhub.com/tools/compress-pdf"
+      howToSteps={howToSteps}
     >
       <div className="space-y-6">
         <FileUploader

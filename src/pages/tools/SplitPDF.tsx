@@ -211,12 +211,32 @@ const SplitPDF = () => {
 
   const selectedCount = pages.filter((p) => p.selected).length;
 
+  const howToSteps = [
+    {
+      name: "Upload PDF File",
+      text: "Click or drag and drop a single PDF file into the upload area. The tool will automatically process all pages and generate preview thumbnails."
+    },
+    {
+      name: "Select Pages to Extract",
+      text: "Review the page thumbnails and select which pages you want to extract as JPEG images. You can select individual pages or use 'Select All' to choose all pages at once."
+    },
+    {
+      name: "Convert to JPEG",
+      text: "Click the 'Convert Selected Pages' button. The tool will convert each selected page to a high-quality JPEG image."
+    },
+    {
+      name: "Download Images",
+      text: "Your browser will automatically download all converted JPEG files. Each page will be saved as a separate image file in your downloads folder."
+    }
+  ];
+
   return (
     <ToolPage
       title="Split PDF to JPEG"
       description="Extract PDF pages and convert them to high-quality JPEG images"
       keywords="split PDF, PDF to JPG, PDF to JPEG, extract PDF pages, convert PDF pages"
       canonicalUrl="https://toolhub.com/tools/split-pdf"
+      howToSteps={howToSteps}
     >
       <div className="space-y-6">
         <FileUploader

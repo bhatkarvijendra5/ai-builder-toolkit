@@ -184,12 +184,32 @@ const MergePDF = () => {
     }
   };
 
+  const howToSteps = [
+    {
+      name: "Upload PDF Files",
+      text: "Click or drag and drop up to 20 PDF files into the upload area. The tool will automatically extract all pages and generate thumbnails for preview."
+    },
+    {
+      name: "Reorder Pages",
+      text: "Drag and drop page thumbnails to arrange them in your desired order. You can combine pages from different PDFs in any sequence you want."
+    },
+    {
+      name: "Remove Unwanted Pages",
+      text: "Hover over any page thumbnail and click the X button to remove it. You can also click 'Clear All' to start over."
+    },
+    {
+      name: "Merge and Download",
+      text: "Click the 'Merge Pages into PDF' button. The tool will combine all pages in your chosen order and automatically download the merged PDF file."
+    }
+  ];
+
   return (
     <ToolPage
       title="Merge PDF"
       description="Combine and reorder pages from multiple PDFs with drag-and-drop"
       keywords="merge PDF, combine PDF, PDF merger, join PDFs, merge PDF files online"
       canonicalUrl="https://toolhub.com/tools/merge-pdf"
+      howToSteps={howToSteps}
     >
       <div className="space-y-6">
         <FileUploader

@@ -172,12 +172,32 @@ const PDFToWord = () => {
     }
   };
 
+  const howToSteps = [
+    {
+      name: "Upload PDF Document",
+      text: "Click or drag and drop your PDF file into the upload area. The tool supports both text-based and scanned PDFs with OCR capability."
+    },
+    {
+      name: "Review Document",
+      text: "Once uploaded, you'll see the file name and size. The tool will prepare to extract text and formatting from your PDF."
+    },
+    {
+      name: "Convert to Word",
+      text: "Click the 'Convert to Word' button. The tool will extract text from each page, perform OCR on scanned pages if needed, and format it into a Word document."
+    },
+    {
+      name: "Download DOCX File",
+      text: "Your converted Word document (.docx) will automatically download. You can now edit the text in Microsoft Word or any compatible word processor."
+    }
+  ];
+
   return (
     <ToolPage
       title="PDF to Word"
       description="Convert PDF documents to editable text format"
       keywords="PDF to Word, PDF to DOCX, convert PDF, PDF converter, PDF to text"
       canonicalUrl="https://toolhub.com/tools/pdf-to-word"
+      howToSteps={howToSteps}
     >
       <div className="space-y-6">
         <FileUploader

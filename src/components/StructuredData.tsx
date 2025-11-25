@@ -5,18 +5,25 @@ interface BreadcrumbItem {
   url: string;
 }
 
+interface HowToStep {
+  name: string;
+  text: string;
+}
+
 interface StructuredDataProps {
-  type?: "organization" | "website" | "breadcrumb" | "tool";
+  type?: "organization" | "website" | "breadcrumb" | "tool" | "howto";
   breadcrumbs?: BreadcrumbItem[];
   toolName?: string;
   toolDescription?: string;
+  howToSteps?: HowToStep[];
 }
 
 const StructuredData = ({ 
   type = "organization", 
   breadcrumbs,
   toolName,
-  toolDescription 
+  toolDescription,
+  howToSteps
 }: StructuredDataProps) => {
   const baseUrl = "https://toolhub.com";
 
@@ -95,6 +102,20 @@ const StructuredData = ({
     }
   } : null;
 
+  const howToSchema = toolName && toolDescription && howToSteps ? {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    name: `How to ${toolName}`,
+    description: toolDescription,
+    step: howToSteps.map((step, index) => ({
+      "@type": "HowToStep",
+      position: index + 1,
+      name: step.name,
+      text: step.text
+    })),
+    totalTime: "PT2M"
+  } : null;
+
   const getSchema = () => {
     switch (type) {
       case "organization":
@@ -105,6 +126,8 @@ const StructuredData = ({
         return breadcrumbSchema;
       case "tool":
         return toolSchema;
+      case "howto":
+        return howToSchema;
       default:
         return organizationSchema;
     }
