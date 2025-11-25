@@ -215,6 +215,8 @@ const SplitPDF = () => {
     <ToolPage
       title="Split PDF to JPEG"
       description="Extract PDF pages and convert them to high-quality JPEG images"
+      keywords="split PDF, PDF to JPG, PDF to JPEG, extract PDF pages, convert PDF pages"
+      canonicalUrl="https://toolhub.com/tools/split-pdf"
     >
       <div className="space-y-6">
         <FileUploader

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,6 +57,12 @@ const ForgotPassword = () => {
 
   return (
     <div className="flex min-h-screen flex-col">
+      <SEO 
+        title="Forgot Password"
+        description="Reset your ToolHub account password. Enter your email to receive a secure password reset link."
+        keywords="forgot password, reset password, password recovery, account recovery"
+        canonicalUrl="https://toolhub.com/forgot-password"
+      />
       <Header />
       <main className="flex-1">
         <div className="container mx-auto px-4 py-8">
