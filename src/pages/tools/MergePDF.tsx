@@ -30,7 +30,7 @@ const MergePDF = () => {
 
   const handleFilesSelected = async (selectedFiles: File[]) => {
     if (pdfs.length + selectedFiles.length > 15) {
-      toast.error("Maximum 15 PDFs allowed");
+      toast.error("You can upload only 15 PDFs at once");
       return;
     }
     if (selectedFiles.length > 0) {
@@ -216,7 +216,7 @@ const MergePDF = () => {
               accept={{ "application/pdf": [".pdf"] }}
               maxFiles={15 - pdfs.length}
               onFilesSelected={handleFilesSelected}
-              acceptedFileTypes={`PDF files (${pdfs.length}/15)`}
+              acceptedFileTypes="PDF files"
             />
           </div>
         </Card>
@@ -265,7 +265,7 @@ const MergePDF = () => {
                 </div>
               )}
               
-              <div className="max-h-[600px] overflow-y-auto overflow-x-hidden pr-2">
+              <div className="max-h-[420px] overflow-y-auto overflow-x-hidden pr-2">
                 <div className="space-y-3">
                   {pdfs.map((pdf) => (
                     <div
