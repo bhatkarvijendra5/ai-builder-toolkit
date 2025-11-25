@@ -51,11 +51,17 @@ const Header = () => {
           <Link to="/" className="transition-colors hover:text-primary">
             Home
           </Link>
-          <a href="#tools" className="transition-colors hover:text-primary">
-            Tools
-          </a>
-          <Link to="/pricing" className="transition-colors hover:text-primary">
-            Pricing
+          <Link to="/merge-pdf" className="transition-colors hover:text-primary">
+            Merge PDF
+          </Link>
+          <Link to="/pdf-to-word" className="transition-colors hover:text-primary">
+            PDF to Word
+          </Link>
+          <Link to="/jpg-to-pdf" className="transition-colors hover:text-primary">
+            JPG to PDF
+          </Link>
+          <Link to="/pdf-to-excel" className="transition-colors hover:text-primary">
+            PDF to Excel
           </Link>
         </nav>
 
@@ -76,18 +82,11 @@ const Header = () => {
               </Button>
             </>
           ) : (
-            <>
-              <Link to="/auth">
-                <Button variant="ghost" size="sm">
-                  Sign In
-                </Button>
-              </Link>
-              <Link to="/auth">
-                <Button size="sm" className="gradient-primary">
-                  Get Started
-                </Button>
-              </Link>
-            </>
+            <Link to="/auth">
+              <Button variant="ghost" size="sm">
+                Sign In
+              </Button>
+            </Link>
           )}
         </div>
       </div>
