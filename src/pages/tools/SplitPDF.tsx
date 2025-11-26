@@ -188,44 +188,52 @@ const SplitPDF = () => {
       const arrayBuffer = await file.arrayBuffer();
       const sourcePdf = await PDFDocument.load(arrayBuffer);
 
-      // Process each selected page
-      for (const pageData of selectedPages) {
-        // Create a new PDF document for this page
-        const newPdf = await PDFDocument.create();
-        
-        // Copy the selected page to the new document (pageNumber is 1-indexed, but copyPages uses 0-indexed)
-        const [copiedPage] = await newPdf.copyPages(sourcePdf, [pageData.pageNumber - 1]);
-        newPdf.addPage(copiedPage);
+      // Create a single new PDF document for all selected pages
+      const newPdf = await PDFDocument.create();
+      
+      // Get the page indices (convert from 1-indexed to 0-indexed)
+      const pageIndices = selectedPages.map(p => p.pageNumber - 1);
+      
+      // Copy all selected pages to the new document
+      const copiedPages = await newPdf.copyPages(sourcePdf, pageIndices);
+      
+      // Add all copied pages to the new document
+      copiedPages.forEach(page => {
+        newPdf.addPage(page);
+      });
 
-        // Save the PDF
-        const pdfBytes = await newPdf.save();
-        const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        
-        // Create download link
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `pdftools-split-page-${pageData.pageNumber}.pdf`;
-        a.style.display = 'none';
-        
-        document.body.appendChild(a);
-        a.click();
-        
-        // Clean up with slight delay to ensure download starts
-        setTimeout(() => {
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }, 100);
-
-        // Small delay between downloads to prevent browser blocking
-        await new Promise(resolve => setTimeout(resolve, 150));
-      }
+      // Save the PDF
+      const pdfBytes = await newPdf.save();
+      const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create download link
+      const a = document.createElement("a");
+      a.href = url;
+      
+      // Generate filename with page range
+      const pageNumbers = selectedPages.map(p => p.pageNumber);
+      const fileName = selectedPages.length === pages.length 
+        ? `pdftools-split-all-pages.pdf`
+        : `pdftools-split-pages-${Math.min(...pageNumbers)}-to-${Math.max(...pageNumbers)}.pdf`;
+      
+      a.download = fileName;
+      a.style.display = 'none';
+      
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
 
       toast({
         title: "Download Complete",
-        description: `Successfully downloaded ${selectedPages.length} PDF file${
+        description: `Successfully downloaded PDF with ${selectedPages.length} page${
           selectedPages.length > 1 ? "s" : ""
-        }. Check your downloads folder.`,
+        }.`,
       });
     } catch (error) {
       console.error("Error splitting PDF:", error);
