@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Download, FileImage, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import * as pdfjsLib from "pdfjs-dist";
+import { PDFDocument } from "pdf-lib";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
 
@@ -168,7 +169,7 @@ const SplitPDF = () => {
     });
   };
 
-  const downloadAsJPEG = async () => {
+  const splitPDF = async () => {
     if (!file || pages.length === 0) return;
 
     const selectedPages = pages.filter((page) => page.selected);
@@ -185,64 +186,36 @@ const SplitPDF = () => {
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ 
-        data: arrayBuffer,
-        useSystemFonts: true,
-      }).promise;
+      const sourcePdf = await PDFDocument.load(arrayBuffer);
 
-      // Process pages sequentially to avoid overwhelming the browser
+      // Process each selected page
       for (const pageData of selectedPages) {
-        const page = await pdf.getPage(pageData.pageNumber);
-        const viewport = page.getViewport({ scale: 2.5 }); // Higher scale for better quality
-        const canvas = document.createElement("canvas");
-        const context = canvas.getContext("2d", { alpha: false });
+        // Create a new PDF document for this page
+        const newPdf = await PDFDocument.create();
+        
+        // Copy the selected page to the new document (pageNumber is 1-indexed, but copyPages uses 0-indexed)
+        const [copiedPage] = await newPdf.copyPages(sourcePdf, [pageData.pageNumber - 1]);
+        newPdf.addPage(copiedPage);
 
-        if (!context) {
-          throw new Error("Failed to get canvas context");
-        }
-
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-
-        // Fill with white background for better JPEG compatibility
-        context.fillStyle = '#FFFFFF';
-        context.fillRect(0, 0, canvas.width, canvas.height);
-
-        await page.render({
-          canvasContext: context,
-          viewport: viewport,
-          canvas: canvas,
-        } as any).promise;
-
-        // Convert canvas to blob with proper JPEG encoding
-        await new Promise<void>((resolve) => {
-          canvas.toBlob(
-            (blob) => {
-              if (blob) {
-                // Create download link with proper MIME type
-                const url = URL.createObjectURL(new Blob([blob], { type: 'image/jpeg' }));
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `pdftools-split-pdf-page-${pageData.pageNumber}.jpg`;
-                a.style.display = 'none';
-                
-                document.body.appendChild(a);
-                a.click();
-                
-                // Clean up with slight delay to ensure download starts
-                setTimeout(() => {
-                  document.body.removeChild(a);
-                  URL.revokeObjectURL(url);
-                  resolve();
-                }, 100);
-              } else {
-                resolve();
-              }
-            },
-            "image/jpeg",
-            0.92
-          );
-        });
+        // Save the PDF
+        const pdfBytes = await newPdf.save();
+        const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        
+        // Create download link
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `pdftools-split-page-${pageData.pageNumber}.pdf`;
+        a.style.display = 'none';
+        
+        document.body.appendChild(a);
+        a.click();
+        
+        // Clean up with slight delay to ensure download starts
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 100);
 
         // Small delay between downloads to prevent browser blocking
         await new Promise(resolve => setTimeout(resolve, 150));
@@ -250,15 +223,15 @@ const SplitPDF = () => {
 
       toast({
         title: "Download Complete",
-        description: `Successfully downloaded ${selectedPages.length} JPEG file${
+        description: `Successfully downloaded ${selectedPages.length} PDF file${
           selectedPages.length > 1 ? "s" : ""
         }. Check your downloads folder.`,
       });
     } catch (error) {
-      console.error("Error converting pages:", error);
+      console.error("Error splitting PDF:", error);
       toast({
         title: "Error",
-        description: "Failed to convert pages. Please try again.",
+        description: "Failed to split PDF. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -275,23 +248,23 @@ const SplitPDF = () => {
     },
     {
       name: "Select Pages to Extract",
-      text: "Review the page thumbnails and select which pages you want to extract as JPEG images. You can select individual pages or use 'Select All' to choose all pages at once."
+      text: "Review the page thumbnails and select which pages you want to extract. You can select individual pages, use page range selection, or use 'Select All' to choose all pages at once."
     },
     {
-      name: "Convert to JPEG",
-      text: "Click the 'Convert Selected Pages' button. The tool will convert each selected page to a high-quality JPEG image."
+      name: "Split PDF",
+      text: "Click the 'Download Selected Pages' button. The tool will extract each selected page into a separate PDF file."
     },
     {
-      name: "Download Images",
-      text: "Your browser will automatically download all converted JPEG files. Each page will be saved as a separate image file in your downloads folder."
+      name: "Download PDFs",
+      text: "Your browser will automatically download all extracted PDF files. Each page will be saved as a separate PDF document in your downloads folder."
     }
   ];
 
   return (
     <ToolPage
-      title="Split PDF to JPEG"
-      description="Extract PDF pages and convert them to high-quality JPEG images"
-      keywords="split PDF, PDF to JPG, PDF to JPEG, extract PDF pages, convert PDF pages"
+      title="Split PDF"
+      description="Extract and split PDF pages into separate PDF documents"
+      keywords="split PDF, extract PDF pages, separate PDF pages, divide PDF, split PDF documents"
       canonicalUrl="https://toolhub.com/tools/split-pdf"
       howToSteps={howToSteps}
     >
@@ -418,7 +391,7 @@ const SplitPDF = () => {
 
             <div className="flex justify-center">
               <Button
-                onClick={downloadAsJPEG}
+                onClick={splitPDF}
                 disabled={selectedCount === 0 || isConverting}
                 size="lg"
                 className="w-full sm:w-auto"
@@ -426,13 +399,13 @@ const SplitPDF = () => {
                 {isConverting ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Converting...
+                    Processing...
                   </>
                 ) : (
                   <>
                     <Download className="mr-2 h-5 w-5" />
                     Download {selectedCount} Page
-                    {selectedCount !== 1 ? "s" : ""} as JPEG
+                    {selectedCount !== 1 ? "s" : ""} as PDF
                   </>
                 )}
               </Button>
