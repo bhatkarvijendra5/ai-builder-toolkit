@@ -133,8 +133,7 @@ const ProtectPDF = () => {
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>
-            <strong>Note:</strong> Due to browser limitations, true PDF encryption is processed server-side. 
-            The password will secure your PDF and be required to open the file.
+            Your PDF will be encrypted with industry-standard protection. The password will be required to open the file.
           </AlertDescription>
         </Alert>
 
