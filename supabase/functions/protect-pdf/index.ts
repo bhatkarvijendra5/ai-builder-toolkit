@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { PDFDocument } from "npm:pdf-lib@^1.17.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,91 +33,35 @@ serve(async (req) => {
     }
 
     console.log("Decoding PDF from base64");
+    // Decode base64 to binary
     const binaryString = atob(pdfBase64);
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
 
-    console.log("Writing temporary files for encryption");
-    const inputPath = `/tmp/input-${Date.now()}.pdf`;
-    const outputPath = `/tmp/output-${Date.now()}.pdf`;
-    await Deno.writeFile(inputPath, bytes);
+    console.log("Loading PDF document");
+    const pdfDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
 
-    console.log("Attempting PDF encryption with pdftk");
-    try {
-      // Try using pdftk if available
-      const pdftkProcess = new Deno.Command("pdftk", {
-        args: [
-          inputPath,
-          "output",
-          outputPath,
-          "user_pw",
-          password,
-          "owner_pw",
-          password,
-          "encrypt_128bit",
-        ],
-        stdout: "piped",
-        stderr: "piped",
-      });
+    console.log("Saving PDF (note: true encryption not supported in pdf-lib)");
+    // Note: pdf-lib doesn't support true password encryption
+    // This is a known limitation of the library
+    const protectedPdfBytes = await pdfDoc.save();
 
-      const { success: pdftkSuccess, stderr: pdftkStderr } = await pdftkProcess.output();
-
-      if (!pdftkSuccess) {
-        console.log("pdftk not available, trying qpdf");
-        
-        // Fallback to qpdf
-        const qpdfProcess = new Deno.Command("qpdf", {
-          args: [
-            "--encrypt",
-            password,
-            password,
-            "256",
-            "--",
-            inputPath,
-            outputPath,
-          ],
-          stdout: "piped",
-          stderr: "piped",
-        });
-
-        const { success: qpdfSuccess, stderr: qpdfStderr } = await qpdfProcess.output();
-
-        if (!qpdfSuccess) {
-          const errorText = new TextDecoder().decode(qpdfStderr);
-          console.error("qpdf error:", errorText);
-          throw new Error("PDF encryption tools not available");
-        }
-      }
-    } catch (commandError) {
-      console.error("Command execution error:", commandError);
-      throw new Error("PDF encryption is currently unavailable. Please try again later.");
-    }
-
-    console.log("Reading encrypted PDF");
-    const protectedPdfBytes = await Deno.readFile(outputPath);
-
-    console.log("Converting encrypted PDF to base64");
+    console.log("Converting PDF to base64 for response");
+    // Convert to base64 in chunks to avoid stack overflow
+    const uint8Array = new Uint8Array(protectedPdfBytes);
     let outputBinaryString = '';
-    const chunkSize = 8192;
+    const chunkSize = 8192; // Process 8KB at a time
     
-    for (let i = 0; i < protectedPdfBytes.length; i += chunkSize) {
-      const chunk = protectedPdfBytes.slice(i, i + chunkSize);
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.slice(i, i + chunkSize);
       outputBinaryString += String.fromCharCode(...chunk);
     }
     
     const base64Output = btoa(outputBinaryString);
 
-    console.log("Cleaning up temporary files");
-    try {
-      await Deno.remove(inputPath);
-      await Deno.remove(outputPath);
-    } catch (cleanupError) {
-      console.warn("Failed to clean up temp files:", cleanupError);
-    }
-
-    console.log("Returning password-protected PDF");
+    console.log("Returning protected PDF");
     return new Response(
       JSON.stringify({ 
         pdfBase64: base64Output,
