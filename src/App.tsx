@@ -23,6 +23,7 @@ import AddPageNumbers from "./pages/tools/AddPageNumbers";
 import ResizeImage from "./pages/tools/ResizeImage";
 import WatermarkPDF from "./pages/tools/WatermarkPDF";
 import ProtectPDF from "./pages/tools/ProtectPDF";
+import UnlockPDF from "./pages/tools/UnlockPDF";
 import ContactUs from "./pages/ContactUs";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import AboutUs from "./pages/AboutUs";
@@ -57,6 +58,7 @@ const App = () => (
           <Route path="/tools/resize-image" element={<ResizeImage />} />
           <Route path="/tools/watermark-pdf" element={<WatermarkPDF />} />
           <Route path="/tools/protect-pdf" element={<ProtectPDF />} />
+          <Route path="/tools/unlock-pdf" element={<UnlockPDF />} />
           <Route path="/contact" element={<ContactUs />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/about" element={<AboutUs />} />
