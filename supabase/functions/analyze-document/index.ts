@@ -36,14 +36,14 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are an expert multilingual OCR system specialized in accurately transcribing handwritten and printed text from images in ANY language. Detect and preserve the original language(s) in the document - whether it is English, Hindi, Arabic, Chinese, or any other language, including mixed-language content. Extract all text with high precision in the EXACT language(s) it appears in the image, maintaining the original formatting, structure, and layout. For tables, preserve the tabular structure. Be extremely accurate with spelling, punctuation, and language-specific characters. You must respond in JSON format.'
+            content: 'You are an expert multilingual OCR system specialized in accurately transcribing handwritten and printed text from images in ANY language. Your primary focus is on handwritten text recognition. Detect and preserve the original language(s) in the document - whether it is English, Hindi, Arabic, Chinese, or any other language, including mixed-language content. Extract all text with high precision in the EXACT language(s) it appears in the image, maintaining the original formatting, structure, layout, spacing, and line breaks EXACTLY as they appear in the source. Preserve indentation, bullet points, numbering, and any visual hierarchy. For tables, preserve the tabular structure with proper alignment. Be extremely accurate with spelling, punctuation, and language-specific characters. You must respond in JSON format.'
           },
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: `Please analyze this image and extract all text accurately. ${outputFormat === 'excel' ? 'If there are tables or structured data, format them clearly with proper rows and columns.' : 'Maintain the original formatting and structure.'} Respond in JSON format with two fields: "text" containing the extracted text, and "languages" containing an array of detected language names (e.g., ["English"], ["Hindi"], ["English", "Hindi"]).`
+                text: `Please analyze this image and extract all text accurately, with special attention to handwritten text. ${outputFormat === 'excel' ? 'If there are tables or structured data, format them clearly with proper rows and columns.' : 'Maintain the EXACT original formatting, structure, spacing, indentation, line breaks, and layout as they appear in the source document. Preserve any visual hierarchy, bullet points, numbering, or special formatting.'} Respond in JSON format with two fields: "text" containing the extracted text with preserved formatting, and "languages" containing an array of detected language names (e.g., ["English"], ["Hindi"], ["English", "Hindi"]).`
               },
               {
                 type: 'image_url',

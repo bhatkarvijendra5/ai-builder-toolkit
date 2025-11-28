@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, FileText, Camera } from "lucide-react";
 import FileUploader from "@/components/FileUploader";
+import { Document, Packer, Paragraph, TextRun } from "docx";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 
 const DocumentAnalyzer = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -81,75 +83,155 @@ const DocumentAnalyzer = () => {
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!extractedText) {
       toast.error("No text to download");
       return;
     }
 
-    let blob: Blob;
-    let fileName: string;
     const baseFileName = "pdftools-document-analyzer";
 
-    switch (outputFormat) {
-      case "word":
-        // Create a simple RTF document for better Word compatibility
-        const rtfContent = `{\\rtf1\\ansi\\deff0 {\\fonttbl {\\f0 Times New Roman;}}\\f0\\fs24 ${extractedText.replace(/\n/g, '\\par ')}}`;
-        blob = new Blob([rtfContent], { type: 'application/rtf' });
-        fileName = `${baseFileName}.rtf`;
-        break;
-      case "excel":
-        // Create CSV format for Excel
-        const csvContent = extractedText.split('\n').map(line => `"${line.replace(/"/g, '""')}"`).join('\n');
-        blob = new Blob([csvContent], { type: 'text/csv' });
-        fileName = `${baseFileName}.csv`;
-        break;
-      case "jpeg":
-        // Create an image with text
-        const canvas = document.createElement('canvas');
-        canvas.width = 1200;
+    try {
+      if (outputFormat === "docx") {
+        // Create DOCX with preserved formatting
         const lines = extractedText.split('\n');
-        canvas.height = Math.max(800, lines.length * 30 + 100);
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.fillStyle = 'white';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.fillStyle = 'black';
-          ctx.font = '20px Arial';
-          lines.forEach((line, index) => {
-            ctx.fillText(line, 50, 50 + index * 30);
-          });
-        }
-        canvas.toBlob((canvasBlob) => {
-          if (canvasBlob) {
-            const url = URL.createObjectURL(canvasBlob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${baseFileName}.jpg`;
-            a.click();
-            URL.revokeObjectURL(url);
-          }
-        }, 'image/jpeg', 0.92);
-        toast.success("Downloaded as JPEG");
-        return;
-      default:
-        blob = new Blob([extractedText], { type: 'text/plain' });
-        fileName = `${baseFileName}.txt`;
-    }
+        const paragraphs = lines.map(line => 
+          new Paragraph({
+            children: [new TextRun(line || " ")],
+            spacing: { after: 200 }
+          })
+        );
 
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success(`Downloaded as ${outputFormat.toUpperCase()}`);
+        const doc = new Document({
+          sections: [{
+            properties: {},
+            children: paragraphs
+          }]
+        });
+
+        const blob = await Packer.toBlob(doc);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${baseFileName}.docx`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success("Downloaded as DOCX");
+        return;
+      }
+
+      if (outputFormat === "pdf") {
+        // Create PDF with preserved formatting
+        const pdfDoc = await PDFDocument.create();
+        const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+        
+        const lines = extractedText.split('\n');
+        const fontSize = 12;
+        const lineHeight = fontSize * 1.5;
+        const margin = 50;
+        const pageWidth = 595; // A4 width
+        const pageHeight = 842; // A4 height
+        const maxWidth = pageWidth - (margin * 2);
+
+        let currentPage = pdfDoc.addPage([pageWidth, pageHeight]);
+        let yPosition = pageHeight - margin;
+
+        for (const line of lines) {
+          if (yPosition < margin + lineHeight) {
+            currentPage = pdfDoc.addPage([pageWidth, pageHeight]);
+            yPosition = pageHeight - margin;
+          }
+
+          // Handle empty lines
+          if (!line.trim()) {
+            yPosition -= lineHeight;
+            continue;
+          }
+
+          // Simple word wrapping
+          const words = line.split(' ');
+          let currentLine = '';
+
+          for (const word of words) {
+            const testLine = currentLine ? `${currentLine} ${word}` : word;
+            const textWidth = timesRomanFont.widthOfTextAtSize(testLine, fontSize);
+
+            if (textWidth > maxWidth && currentLine) {
+              currentPage.drawText(currentLine, {
+                x: margin,
+                y: yPosition,
+                size: fontSize,
+                font: timesRomanFont,
+                color: rgb(0, 0, 0),
+              });
+              yPosition -= lineHeight;
+              currentLine = word;
+
+              if (yPosition < margin + lineHeight) {
+                currentPage = pdfDoc.addPage([pageWidth, pageHeight]);
+                yPosition = pageHeight - margin;
+              }
+            } else {
+              currentLine = testLine;
+            }
+          }
+
+          if (currentLine) {
+            currentPage.drawText(currentLine, {
+              x: margin,
+              y: yPosition,
+              size: fontSize,
+              font: timesRomanFont,
+              color: rgb(0, 0, 0),
+            });
+            yPosition -= lineHeight;
+          }
+        }
+
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${baseFileName}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success("Downloaded as PDF");
+        return;
+      }
+
+      // Handle other formats
+      let blob: Blob;
+      let fileName: string;
+
+      switch (outputFormat) {
+        case "excel":
+          const csvContent = extractedText.split('\n').map(line => `"${line.replace(/"/g, '""')}"`).join('\n');
+          blob = new Blob([csvContent], { type: 'text/csv' });
+          fileName = `${baseFileName}.csv`;
+          break;
+        default:
+          blob = new Blob([extractedText], { type: 'text/plain' });
+          fileName = `${baseFileName}.txt`;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Downloaded as ${outputFormat.toUpperCase()}`);
+    } catch (error) {
+      console.error('Error creating document:', error);
+      toast.error("Failed to create document. Please try again.");
+    }
   };
 
   return (
     <ToolPage
       title="AI Document Analyzer"
-      description="Scan handwritten notes and convert them to text with high accuracy"
+      description="Scan and clean handwritten notes, extract text with OCR, and download as DOCX/PDF with preserved layout"
     >
       <Card className="p-6">
         <div className="space-y-6">
@@ -163,9 +245,9 @@ const DocumentAnalyzer = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="text">Text File (.txt)</SelectItem>
-                <SelectItem value="word">Word Document (.rtf)</SelectItem>
+                <SelectItem value="docx">Word Document (.docx)</SelectItem>
+                <SelectItem value="pdf">PDF Document (.pdf)</SelectItem>
                 <SelectItem value="excel">Excel/CSV (.csv)</SelectItem>
-                <SelectItem value="jpeg">JPEG Image (.jpg)</SelectItem>
               </SelectContent>
             </Select>
           </div>
