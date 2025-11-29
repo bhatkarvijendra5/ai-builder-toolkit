@@ -73,18 +73,18 @@ const Blog = () => {
       />
       <Header />
       <main className="flex-1">
-        <section className="py-20 px-4">
+        <section className="py-10 md:py-20 px-4">
           <div className="container mx-auto max-w-6xl">
-            <div className="text-center mb-12">
-              <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            <div className="text-center mb-8 md:mb-12">
+              <h1 className="text-3xl md:text-4xl font-bold mb-3 md:mb-4 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                 ToolHub Blog
               </h1>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-base md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
                 Tips, tutorials, and insights for working with PDFs and images
               </p>
             </div>
 
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 md:gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {blogPosts.map((post) => (
                 <Link key={post.id} to={`/blog/${post.slug}`}>
                   <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">

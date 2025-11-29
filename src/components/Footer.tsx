@@ -4,8 +4,8 @@ import { Link } from "react-router-dom";
 const Footer = () => {
   return (
     <footer className="border-t bg-muted/30">
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+      <div className="container mx-auto px-4 py-8 md:py-12">
+        <div className="grid gap-6 md:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <Link to="/" className="mb-4 flex items-center space-x-2">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-lg">
@@ -19,8 +19,8 @@ const Footer = () => {
           </div>
 
           <div>
-            <h3 className="mb-4 font-semibold">PDF Tools</h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
+            <h3 className="mb-3 md:mb-4 font-semibold text-sm md:text-base">PDF Tools</h3>
+            <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-muted-foreground">
               <li>
                 <Link to="/tools/merge-pdf" className="hover:text-primary">
                   Merge PDF
@@ -40,8 +40,8 @@ const Footer = () => {
           </div>
 
           <div>
-            <h3 className="mb-4 font-semibold">Image Tools</h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
+            <h3 className="mb-3 md:mb-4 font-semibold text-sm md:text-base">Image Tools</h3>
+            <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-muted-foreground">
               <li>
                 <Link to="/tools/convert-image" className="hover:text-primary">
                   Convert Images
@@ -61,8 +61,8 @@ const Footer = () => {
           </div>
 
           <div>
-            <h3 className="mb-4 font-semibold">Company</h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
+            <h3 className="mb-3 md:mb-4 font-semibold text-sm md:text-base">Company</h3>
+            <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-muted-foreground">
               <li>
                 <Link to="/about" className="hover:text-primary">
                   About Us
@@ -93,7 +93,7 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="mt-8 border-t pt-8 text-center text-sm text-muted-foreground">
+        <div className="mt-6 md:mt-8 border-t pt-6 md:pt-8 text-center text-xs md:text-sm text-muted-foreground">
           <p>&copy; 2025 ToolHub. All rights reserved.</p>
         </div>
       </div>
