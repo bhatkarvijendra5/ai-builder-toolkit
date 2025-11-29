@@ -29,6 +29,8 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import AboutUs from "./pages/AboutUs";
 import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
+import Blog from "./pages/Blog";
+import CompressImage from "./pages/tools/CompressImage";
 
 const queryClient = new QueryClient();
 
@@ -56,12 +58,14 @@ const App = () => (
           <Route path="/tools/organize-pdf" element={<OrganizePDF />} />
           <Route path="/tools/page-numbers" element={<AddPageNumbers />} />
           <Route path="/tools/resize-image" element={<ResizeImage />} />
+          <Route path="/tools/compress-image" element={<CompressImage />} />
           <Route path="/tools/watermark-pdf" element={<WatermarkPDF />} />
           <Route path="/tools/protect-pdf" element={<ProtectPDF />} />
           <Route path="/tools/unlock-pdf" element={<UnlockPDF />} />
           <Route path="/contact" element={<ContactUs />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/about" element={<AboutUs />} />
+          <Route path="/blog" element={<Blog />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
