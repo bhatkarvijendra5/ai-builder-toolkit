@@ -63,6 +63,9 @@ const Header = () => {
           <Link to="/tools/pdf-to-excel" className="transition-colors hover:text-primary">
             PDF to Excel
           </Link>
+          <Link to="/blog" className="transition-colors hover:text-primary">
+            Blog
+          </Link>
         </nav>
 
         <div className="flex items-center space-x-4">
