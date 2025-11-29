@@ -183,15 +183,15 @@ const ToolsGrid = () => {
   });
 
   return (
-    <section id="tools" className="pt-4 pb-16 md:pt-6 md:pb-24">
-      <div className="container mx-auto px-4">
-        <div className="mb-8 space-y-4">
+    <section id="tools" className="pt-4 pb-12 md:pt-6 md:pb-24 px-4">
+      <div className="container mx-auto">
+        <div className="mb-6 md:mb-8 space-y-4">
           <div className="relative mx-auto max-w-md">
-            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 md:h-5 md:w-5 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="text"
               placeholder="Search tools..."
-              className="pl-10"
+              className="pl-10 h-10 md:h-11 text-sm md:text-base"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -202,9 +202,13 @@ const ToolsGrid = () => {
             onValueChange={setSelectedCategory}
             className="mx-auto w-full"
           >
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto gap-1 p-1">
               {categories.map((category) => (
-                <TabsTrigger key={category} value={category}>
+                <TabsTrigger 
+                  key={category} 
+                  value={category}
+                  className="text-xs md:text-sm px-2 py-2 md:px-3"
+                >
                   {category}
                 </TabsTrigger>
               ))}
@@ -212,7 +216,7 @@ const ToolsGrid = () => {
           </Tabs>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredTools.map((tool) => (
             <ToolCard key={tool.title} {...tool} />
           ))}
@@ -220,7 +224,7 @@ const ToolsGrid = () => {
 
         {filteredTools.length === 0 && (
           <div className="py-12 text-center">
-            <p className="text-lg text-muted-foreground">
+            <p className="text-base md:text-lg text-muted-foreground">
               No tools found matching your search.
             </p>
           </div>
