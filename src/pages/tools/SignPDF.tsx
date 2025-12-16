@@ -3,12 +3,12 @@ import ToolPage from "@/components/ToolPage";
 import FileUploader from "@/components/FileUploader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Download, Loader2, Pen, Upload, Camera, Trash2, RotateCw, Save, GripVertical } from "lucide-react";
+import { Download, Loader2, Pen, Upload, Camera, Trash2, RotateCw, Save, GripVertical, CheckCircle, AlertCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { PDFDocument, degrees } from "pdf-lib";
 import * as pdfjsLib from "pdfjs-dist";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { pipeline, env } from '@huggingface/transformers';
+import { supabase } from "@/integrations/supabase/client";
 
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
@@ -50,6 +50,8 @@ const SignPDF = () => {
   const [resizingSignature, setResizingSignature] = useState<{ id: string; handle: string } | null>(null);
   const [resizeStartData, setResizeStartData] = useState<{ x: number; y: number; width: number; height: number; mouseX: number; mouseY: number } | null>(null);
   const [isRemovingBg, setIsRemovingBg] = useState(false);
+  const [signingStatus, setSigningStatus] = useState<'idle' | 'signing' | 'success' | 'error'>('idle');
+  const [signingError, setSigningError] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -512,60 +514,99 @@ const SignPDF = () => {
     setResizeStartData(null);
   };
 
-  // Export signed PDF
+  // Export signed PDF via edge function
   const exportSignedPDF = async () => {
     if (!file) return;
 
+    if (placedSignatures.length === 0) {
+      toast({
+        title: "No Signatures",
+        description: "Please place at least one signature on the document before downloading.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsProcessing(true);
+    setSigningStatus('signing');
+    setSigningError(null);
 
     try {
+      // Convert file to base64
       const arrayBuffer = await file.arrayBuffer();
-      const pdfDoc = await PDFDocument.load(arrayBuffer);
-      const pages = pdfDoc.getPages();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      let binaryString = '';
+      const chunkSize = 8192;
+      
+      for (let i = 0; i < uint8Array.length; i += chunkSize) {
+        const chunk = uint8Array.slice(i, i + chunkSize);
+        binaryString += String.fromCharCode(...chunk);
+      }
+      
+      const pdfBase64 = btoa(binaryString);
 
-      for (const placed of placedSignatures) {
-        const page = pages[placed.page];
-        if (!page) continue;
+      // Prepare signatures for the edge function
+      const signaturesData = placedSignatures.map(sig => ({
+        dataUrl: sig.dataUrl,
+        x: sig.x,
+        y: sig.y,
+        width: sig.width,
+        height: sig.height,
+        rotation: sig.rotation,
+        page: sig.page,
+      }));
 
-        const signatureImageBytes = await fetch(placed.dataUrl).then((res) => res.arrayBuffer());
-        
-        // Detect image format and use appropriate embed method
-        const isPng = placed.dataUrl.startsWith('data:image/png');
-        const signatureImage = isPng 
-          ? await pdfDoc.embedPng(signatureImageBytes)
-          : await pdfDoc.embedJpg(signatureImageBytes);
+      console.log("Calling sign-pdf edge function with", signaturesData.length, "signatures");
 
-        const { height: pageHeight } = page.getSize();
+      // Call the edge function
+      const { data, error } = await supabase.functions.invoke('sign-pdf', {
+        body: {
+          pdfBase64,
+          signatures: signaturesData,
+          fileName: `signed-${file.name}`,
+        },
+      });
 
-        page.drawImage(signatureImage, {
-          x: placed.x,
-          y: pageHeight - placed.y - placed.height,
-          width: placed.width,
-          height: placed.height,
-          rotate: degrees(-placed.rotation),
-        });
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Failed to sign PDF");
       }
 
-      const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" });
+      if (!data?.success) {
+        console.error("Signing failed:", data?.error);
+        throw new Error(data?.error || "Failed to sign PDF");
+      }
+
+      // Download the signed PDF
+      const signedBinaryString = atob(data.pdfBase64);
+      const signedBytes = new Uint8Array(signedBinaryString.length);
+      for (let i = 0; i < signedBinaryString.length; i++) {
+        signedBytes[i] = signedBinaryString.charCodeAt(i);
+      }
+
+      const blob = new Blob([signedBytes], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `signed-${file.name}`;
+      a.download = data.fileName || `signed-${file.name}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
+      setSigningStatus('success');
       toast({
-        title: "PDF Signed",
-        description: "Your signed PDF has been downloaded",
+        title: "PDF Signed Successfully",
+        description: `Your signed PDF with ${data.signatureCount} signature(s) has been downloaded.`,
       });
-    } catch (error) {
-      console.error("Error exporting PDF:", error);
+    } catch (error: any) {
+      console.error("Error signing PDF:", error);
+      const errorMessage = error?.message || "Failed to sign PDF. Please try again.";
+      setSigningStatus('error');
+      setSigningError(errorMessage);
       toast({
-        title: "Error",
-        description: "Failed to export signed PDF",
+        title: "Signing Failed",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -857,19 +898,49 @@ const SignPDF = () => {
                   </Button>
                 </div>
 
-                <Button onClick={exportSignedPDF} disabled={isProcessing || placedSignatures.length === 0} size="lg" className="w-full">
+                {/* Signing Status */}
+                {signingStatus === 'success' && (
+                  <div className="flex items-center gap-2 p-3 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-md">
+                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    <span className="text-sm text-green-700 dark:text-green-300">
+                      PDF signed successfully! Document has been flattened with embedded signatures.
+                    </span>
+                  </div>
+                )}
+
+                {signingStatus === 'error' && signingError && (
+                  <div className="flex items-center gap-2 p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-md">
+                    <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                    <span className="text-sm text-red-700 dark:text-red-300">
+                      {signingError}
+                    </span>
+                  </div>
+                )}
+
+                <Button 
+                  onClick={exportSignedPDF} 
+                  disabled={isProcessing || placedSignatures.length === 0} 
+                  size="lg" 
+                  className="w-full"
+                >
                   {isProcessing ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Exporting...
+                      Signing PDF...
                     </>
                   ) : (
                     <>
                       <Download className="mr-2 h-5 w-5" />
-                      Download Signed PDF
+                      Sign & Download PDF
                     </>
                   )}
                 </Button>
+
+                {placedSignatures.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    Place at least one signature on the document to enable download
+                  </p>
+                )}
               </div>
             </Card>
           </>
